@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="L1X_icon.png" type="image/x-icon" />
+    <link rel="stylesheet" href="style.css" />
+    <title>FT Example</title>
+  </head>
+  <body>
+    <header>
+      <h1>L1X Fungible Token Contract Example</h1>
+    </header>
+    <!-- Side Menu -->
+    <nav>
+      <ul>
+        <li>
+          <a
+            href="https://l1x-sdk.gitbook.io/l1x-developer-interface/v/interface-essentials/l1x-vm-sdk/l1x-native-sdk-for-l1x-vm/build-your-first-smart-contract-on-l1x-vm#create-l1x-project-using-cargo-l1x"
+            target="_blank"
+            >Create Project</a
+          >
+        </li>
+        <li>
+          <a
+            href="https://l1x-sdk.gitbook.io/l1x-developer-interface/v/interface-essentials/l1x-vm-sdk/l1x-native-sdk-for-l1x-vm/build-your-first-smart-contract-on-l1x-vm#deploy-l1x-project"
+            target="_blank"
+            >Deploy Project</a
+          >
+        </li>
+        <li>
+          <a
+            href="https://l1x-sdk.gitbook.io/l1x-developer-interface/v/interface-essentials/l1x-vm-sdk/l1x-native-sdk-for-l1x-vm/build-your-first-smart-contract-on-l1x-vm#initialize-l1x-project"
+            target="_blank"
+            >Initialize Project</a
+          >
+        </li>
+        <li>
+          <a href="#ft_name">Get Name</a>
+        </li>
+        <li>
+          <a href="#ft_symbol">Get Symbol</a>
+        </li>
+        <li>
+          <a href="#ft_decimals">Get Decimals</a>
+        </li>
+        <li>
+          <a href="#ft_icon">Get Icon</a>
+        </li>
+        <li>
+          <a href="#ft_metadata">Get Metadata</a>
+        </li>
+        <li>
+          <a href="#ft_mint">Mint</a>
+        </li>
+        <li>
+          <a href="#ft_transfer">Transfer</a>
+        </li>
+        <li>
+          <a href="#ft_transfer_from">Transfer From</a>
+        </li>
+        <li>
+          <a href="#ft_total_supply">Total Supply</a>
+        </li>
+        <li>
+          <a href="#ft_balance_of">Get Balance</a>
+        </li>
+        <li>
+          <a href="#ft_approve">Approve Spender</a>
+        </li>
+        <li>
+          <a href="#ft_increase_allowance">Increase Allowance</a>
+        </li>
+        <li>
+          <a href="#ft_decrease_allowance">Decrease Allowance</a>
+        </li>
+        <li>
+          <a href="#ft_allowance">Get Allowance</a>
+        </li>
+      </ul>
+    </nav>
+    <!-- End Of Side Menu -->
+
+    <!-- Note -->
+    <section>
+      <h2>Note : </h2>
+      <h5>- All examples mentioned here are on L1X testnet network.</h5>
+      <h5>- Adjust the fee limit as per you provided while initializing contract</h5>
+    </section>
+    <!-- End of note -->
+
+    <!-- ft_name -->
+    <section id="ft_name">
+      <h2>get name</h2>
+      <h3>Example</h3>
+      <pre>
+        <code>
+        // JavaScript example
+          <b>
+            window.L1X.makeRequestCall({
+              contractAddress: "92157ef2c70f54547517e63b68b987d16f53444e",
+              functionName: "ft_name",
+              args: {}
+            })
+              .then((response) => console.log(response))
+              .catch((err) => console.error(err));
+          </b>
+        </code>
+      </pre>
+    </section>
+    <!-- end of ft_name -->
+
+    <!-- ft_symbol -->
+    <section id="ft_symbol">
+      <h2>get symbol</h2>
+      <h3>Example</h3>
+      <pre>
+        <code>
+        // JavaScript example
+          <b>
+            window.L1X.makeRequestCall({
+              contractAddress: "92157ef2c70f54547517e63b68b987d16f53444e",
+              functionName: "ft_symbol",
+              args: {}
+            })
+              .then((response) => console.log(response))
+              .catch((err) => console.error(err));
+          </b>
+        </code>
+      </pre>
+    </section>
+    <!-- end of ft_symbol -->
+
+    <!-- ft_decimals -->
+    <section id="ft_decimals">
+      <h2>get decimals</h2>
+      <h3>Example</h3>
+      <pre>
+        <code>
+        // JavaScript example
+          <b>
+            window.L1X.makeRequestCall({
+              contractAddress: "92157ef2c70f54547517e63b68b987d16f53444e",
+              functionName: "ft_decimals",
+              args: {}
+            })
+              .then((response) => console.log(response))
+              .catch((err) => console.error(err));
+          </b>
+        </code>
+      </pre>
+    </section>
+    <!-- end of ft_decimals -->
+
+    <!-- ft_icon -->
+    <section id="ft_icon">
+      <h2>get icon</h2>
+      <h3>Example</h3>
+      <pre>
+        <code>
+        // JavaScript example
+          <b>
+            window.L1X.makeRequestCall({
+              contractAddress: "92157ef2c70f54547517e63b68b987d16f53444e",
+              functionName: "ft_icon",
+              args: {}
+            })
+              .then((response) => console.log(response))
+              .catch((err) => console.error(err));
+          </b>
+        </code>
+      </pre>
+    </section>
+    <!-- end of ft_icon -->
+
+    <!-- ft_metadata -->
+    <section id="ft_metadata">
+      <h2>get metadata</h2>
+      <h3>Example</h3>
+      <pre>
+        <code>
+        // JavaScript example
+          <b>
+            window.L1X.makeRequestCall({
+              contractAddress: "92157ef2c70f54547517e63b68b987d16f53444e",
+              functionName: "ft_metadata",
+              args: {}
+            })
+              .then((response) => console.log(response))
+              .catch((err) => console.error(err));
+          </b>
+        </code>
+      </pre>
+    </section>
+    <!-- end of ft_metadata -->
+
+    <!-- ft_total_supply -->
+    <section id="ft_total_supply">
+      <h2>get total supply</h2>
+      <h3>Example</h3>
+      <pre>
+        <code>
+        // JavaScript example
+          <b>
+            window.L1X.makeRequestCall({
+              contractAddress: "92157ef2c70f54547517e63b68b987d16f53444e",
+              functionName: "ft_total_supply",
+              args: {}
+            })
+              .then((response) => console.log(response))
+              .catch((err) => console.error(err));
+          </b>
+        </code>
+      </pre>
+    </section>
+    <!-- end of ft_total_supply -->
+
+    <!-- ft_balance_of -->
+    <section id="ft_balance_of">
+      <h2>get balance</h2>
+      <h3>Example</h3>
+      <pre>
+        <code>
+        // JavaScript example
+          <b>
+            window.L1X.makeRequestCall({
+              contractAddress: "92157ef2c70f54547517e63b68b987d16f53444e",
+              functionName: "ft_balance_of",
+              args: {
+                account_id: "0xe74193e598fcf576cd099cee5b4ffe6efbea6b8e"
+              }
+            })
+              .then((response) => console.log(response))
+              .catch((err) => console.error(err));
+          </b>
+        </code>
+      </pre>
+    </section>
+    <!-- end of ft_balance_of -->
+
+    <!-- ft_balance_of -->
+    <section id="ft_allowance">
+      <h2>get allowance</h2>
+      <h3>Example</h3>
+      <pre>
+        <code>
+        // JavaScript example
+          <b>
+            window.L1X.makeRequestCall({
+              contractAddress: "92157ef2c70f54547517e63b68b987d16f53444e",
+              functionName: "ft_allowance",
+              args: {
+                owner_id: "0xe74193e598fcf576cd099cee5b4ffe6efbea6b8e",
+                spender_id: "0xe74193e598fcf576cd099cee5b4ffe6efbea6b8e"
+              }
+            })
+              .then((response) => console.log(response))
+              .catch((err) => console.error(err));
+          </b>
+        </code>
+      </pre>
+    </section>
+    <!-- end of ft_allowance -->
+
+    <!-- ft_mint -->
+    <section id="ft_mint">
+      <h2>mint</h2>
+      <h3>Example</h3>
+      <pre>
+        <code>
+        // JavaScript example
+          <b>
+            const transactionData = {
+              recipient_id: "0xfdf87120d9c9ef4be35fc474f9152ed62acfa69e",
+              amount: 999
+            };
+
+            window.L1X.sendTransaction({
+              from: "0xe74193e598fcf576cd099cee5b4ffe6efbea6b8e",
+              contractAddress: "92157ef2c70f54547517e63b68b987d16f53444e",
+              functionName: "ft_mint",
+              args: transactionData,
+              feeLimit: 1000000000000000000   // optional
+            })
+              .then((response) => {
+                console.log("Transaction successful:", response);
+              })
+              .catch((error) => {
+                console.error("Transaction failed:", error);
+              });
+          </b>
+        </code>
+      </pre>
+    </section>
+    <!-- end of ft_mint -->
+
+    <!-- ft_transfer -->
+    <section id="ft_transfer">
+      <h2>transfer</h2>
+      <h3>Example</h3>
+      <pre>
+        <code>
+        // JavaScript example
+          <b>
+            window.L1X.transferTokens({
+              from: "e74193e598fcf576cd099cee5b4ffe6efbea6b8e",
+              tokenAddress: "92157ef2c70f54547517e63b68b987d16f53444e",
+              receiver: "4f65730fa7888120cf21e344542b03969e4f16cc",
+              value: "1000000000000000000",
+              feeLimit: 100000
+            })
+              .then((res) => console.log(res))
+              .catch((err) => console.error(err));
+          </b>
+        </code>
+      </pre>
+    </section>
+    <!-- end of ft_transfer -->
+
+    <!-- ft_transfer_from -->
+    <section id="ft_transfer_from">
+      <h2>transfer from</h2>
+      <h3>Example</h3>
+      <pre>
+        <code>
+        // JavaScript example
+          <b>
+            const transactionData = {
+              sender_id: "0xe74193e598fcf576cd099cee5b4ffe6efbea6b8e",
+              recipient_id: "0xfdf87120d9c9ef4be35fc474f9152ed62acfa69e",
+              amount: "1000000000000000000"
+            };
+
+            window.L1X.sendTransaction({
+              from: "0xe74193e598fcf576cd099cee5b4ffe6efbea6b8e",
+              contractAddress: "92157ef2c70f54547517e63b68b987d16f53444e",
+              functionName: "ft_transfer_from",
+              args: transactionData
+            })
+              .then((response) => {
+                console.log("Transaction successful:", response);
+              })
+              .catch((error) => {
+                console.error("Transaction failed:", error);
+              });
+          </b>
+        </code>
+      </pre>
+    </section>
+    <!-- end of ft_transfer_from -->
+
+    <!-- ft_approve -->
+    <section id="ft_approve">
+      <h2>Approve</h2>
+      <h3>Example</h3>
+      <pre>
+        <code>
+          // JavaScript example
+          <b>
+            const transactionData = {
+              spender_id: "0xfdf87120d9c9ef4be35fc474f9152ed62acfa69e",
+              amount: "10000000000000000000"
+            };
+
+            window.L1X.sendTransaction({
+              from: "0xe74193e598fcf576cd099cee5b4ffe6efbea6b8e",
+              contractAddress: "92157ef2c70f54547517e63b68b987d16f53444e",
+              functionName: "ft_approve",
+              args: transactionData,
+              feeLimit: 100000
+            })
+              .then((response) => {
+                console.log("Transaction successful:", response);
+              })
+              .catch((error) => {
+                console.error("Transaction failed:", error);
+              });
+          </b>
+        </code>
+      </pre>
+    </section>
+    <!-- end of ft_approve -->
+
+    <!-- ft_increase_allowance -->
+    <section id="ft_increase_allowance">
+      <h2>Increase Allowance</h2>
+      <h3>Example</h3>
+      <pre>
+        <code>
+          // JavaScript example
+          <b>
+            const transactionData = {
+              spender_id: "0xfdf87120d9c9ef4be35fc474f9152ed62acfa69e",
+              amount: "10000000000000000000"
+            };
+
+            window.L1X.sendTransaction({
+              from: "0xe74193e598fcf576cd099cee5b4ffe6efbea6b8e",
+              contractAddress: "92157ef2c70f54547517e63b68b987d16f53444e",
+              functionName: "ft_increase_allowance",
+              args: transactionData,
+              feeLimit: 100000
+            })
+              .then((response) => {
+                console.log("Transaction successful:", response);
+              })
+              .catch((error) => {
+                console.error("Transaction failed:", error);
+              });
+          </b>
+        </code>
+      </pre>
+    </section>
+    <!-- end of ft_increase_allowance -->
+
+
+    <!-- ft_decrease_allowance -->
+    <section id="ft_decrease_allowance">
+      <h2>Decrease Allowance</h2>
+      <h3>Example</h3>
+      <pre>
+        <code>
+          // JavaScript example
+          <b>
+            const transactionData = {
+              spender_id: "0xfdf87120d9c9ef4be35fc474f9152ed62acfa69e",
+              amount: "10000000000000000000"
+            };
+
+            window.L1X.sendTransaction({
+              from: "0xe74193e598fcf576cd099cee5b4ffe6efbea6b8e",
+              contractAddress: "92157ef2c70f54547517e63b68b987d16f53444e",
+              functionName: "ft_decrease_allowance",
+              args: transactionData,
+              feeLimit: 100000
+            })
+              .then((response) => {
+                console.log("Transaction successful:", response);
+              })
+              .catch((error) => {
+                console.error("Transaction failed:", error);
+              });
+          </b>
+        </code>
+      </pre>
+    </section>
+    <!-- end of ft_decrease_allowance -->
+  </body>
+</html>

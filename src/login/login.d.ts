@@ -1,0 +1,3 @@
+interface LoginProps {
+  redirectTo: string;
+}

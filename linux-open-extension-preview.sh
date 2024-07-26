@@ -1,0 +1,2 @@
+# google-chrome --app=http://localhost:3000 && sleep 0.2 && window_x=$(($(xdpyinfo | awk '/dimensions/{print $2}' | cut -dx -f1) - 375)) && window_y=0 && wmctrl -r :ACTIVE: -b remove,maximized_vert,maximized_horz && wmctrl -r :ACTIVE: -e 0,$window_x,$window_y,375,600
+google-chrome --app=http://localhost:3000 && sleep 0.2 && window_x=$(($(xdpyinfo | awk '/dimensions/{print $2}' | cut -dx -f1) - 375)) && window_y=0 && wmctrl -r :ACTIVE: -b remove,maximized_vert,maximized_horz && wmctrl -r :ACTIVE: -e 0,$window_x,$window_y,375,600 && wmctrl -r :ACTIVE: -b add,above
