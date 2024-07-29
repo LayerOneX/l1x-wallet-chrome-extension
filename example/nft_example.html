@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="L1X_icon.png" type="image/x-icon" />
+    <link rel="stylesheet" href="style.css" />
+    <title>NFT Example</title>
+  </head>
+  <body>
+    <header>
+      <h1>L1X Fungible Token Contract Example</h1>
+    </header>
+    <!-- Side Menu -->
+    <nav>
+      <ul>
+        <li>
+          <a
+            href="https://l1x-sdk.gitbook.io/l1x-developer-interface/v/interface-essentials/l1x-vm-sdk/l1x-native-sdk-for-l1x-vm/build-your-first-smart-contract-on-l1x-vm#create-l1x-project-using-cargo-l1x"
+            target="_blank"
+            >Create Project</a
+          >
+        </li>
+        <li>
+          <a
+            href="https://l1x-sdk.gitbook.io/l1x-developer-interface/v/interface-essentials/l1x-vm-sdk/l1x-native-sdk-for-l1x-vm/build-your-first-smart-contract-on-l1x-vm#deploy-l1x-project"
+            target="_blank"
+            >Deploy Project</a
+          >
+        </li>
+        <li>
+          <a
+            href="https://l1x-sdk.gitbook.io/l1x-developer-interface/v/interface-essentials/l1x-vm-sdk/l1x-native-sdk-for-l1x-vm/build-your-first-smart-contract-on-l1x-vm#initialize-l1x-project"
+            target="_blank"
+            >Initialize Project</a
+          >
+        </li>
+        <li>
+          <a href="#nft_name">Get Name</a>
+        </li>
+        <li>
+          <a href="#nft_symbol">Get Symbol</a>
+        </li>
+        <li>
+          <a href="#nft_decimals">Get Decimals</a>
+        </li>
+        <li>
+          <a href="#nft_icon">Get Icon</a>
+        </li>
+        <li>
+          <a href="#nft_token_uri">Get Token URI</a>
+        </li>
+        <li>
+          <a href="#nft_metadata">Get Metadata</a>
+        </li>
+        <li>
+          <a href="#nft_minted_total">Get Minted Total</a>
+        </li>
+        <li>
+          <a href="#nft_mint_to">Mint To</a>
+        </li>
+        <li>
+          <a href="#nft_mint_id_to">Mint Id To</a>
+        </li>
+        <li>
+          <a href="#nft_burn">Burn</a>
+        </li>
+        <li>
+          <a href="#nft_approve">Approve</a>
+        </li>
+        <li>
+          <a href="#nft_set_approval_for_all">Set Approval For All</a>
+        </li>
+        <li>
+          <a href="#nft_transfer_from">Transfer From</a>
+        </li>
+        <li>
+          <a href="#nft_balance_of">Balance</a>
+        </li>
+        <li>
+          <a href="#nft_owner_of">Owner</a>
+        </li>
+        <li>
+          <a href="#nft_owned_tokens">Owned Tokens</a>
+        </li>
+      </ul>
+    </nav>
+    <!-- End Of Side Menu -->
+
+    <!-- Note -->
+    <section>
+      <h2>Note :</h2>
+      <h5>- All examples mentioned here are on L1X testnet network.</h5>
+      <h5>
+        - Adjust the fee limit as per you provided while initializing contract
+      </h5>
+    </section>
+    <!-- End of note -->
+
+    <!-- nft_name -->
+    <section id="nft_name">
+      <h2>get name</h2>
+      <h3>Example</h3>
+      <pre>
+        <code>
+        // JavaScript example
+          <b>
+            window.L1X.makeRequestCall({
+              contractAddress: "e08b886798933dfeaed6bf10e91ab4ba4bdee759",
+              functionName: "nft_name",
+              args: {}
+            })
+              .then((response) => console.log(response))
+              .catch((err) => console.error(err));
+          </b>
+        </code>
+      </pre>
+    </section>
+    <!-- end of ft_name -->
+
+    <!-- nft_symbol -->
+    <section id="nft_symbol">
+      <h2>get symbol</h2>
+      <h3>Example</h3>
+      <pre>
+        <code>
+        // JavaScript example
+          <b>
+            window.L1X.makeRequestCall({
+              contractAddress: "e08b886798933dfeaed6bf10e91ab4ba4bdee759",
+              functionName: "nft_symbol",
+              args: {}
+            })
+              .then((response) => console.log(response))
+              .catch((err) => console.error(err));
+          </b>
+        </code>
+      </pre>
+    </section>
+    <!-- end of nft_symbol -->
+
+    <!-- nft_decimals -->
+    <section id="nft_decimals">
+      <h2>get decimal</h2>
+      <h3>Example</h3>
+      <pre>
+        <code>
+        // JavaScript example
+          <b>
+            window.L1X.makeRequestCall({
+              contractAddress: "e08b886798933dfeaed6bf10e91ab4ba4bdee759",
+              functionName: "nft_decimals",
+              args: {}
+            })
+              .then((response) => console.log(response))
+              .catch((err) => console.error(err));
+          </b>
+        </code>
+      </pre>
+    </section>
+    <!-- end of nft_decimals -->
+
+    <!-- nft_icon -->
+    <section id="nft_icon">
+      <h2>get icon</h2>
+      <h3>Example</h3>
+      <pre>
+        <code>
+        // JavaScript example
+          <b>
+            window.L1X.makeRequestCall({
+              contractAddress: "e08b886798933dfeaed6bf10e91ab4ba4bdee759",
+              functionName: "nft_icon",
+              args: {}
+            })
+              .then((response) => console.log(response))
+              .catch((err) => console.error(err));
+          </b>
+        </code>
+      </pre>
+    </section>
+    <!-- end of nft_icon -->
+
+    <!-- nft_token_uri -->
+    <section id="nft_token_uri">
+      <h2>get token uri</h2>
+      <h3>Example</h3>
+      <pre>
+        <code>
+        // JavaScript example
+          <b>
+            window.L1X.makeRequestCall({
+              contractAddress: "e08b886798933dfeaed6bf10e91ab4ba4bdee759",
+              functionName: "nft_token_uri",
+              args: {
+                id: "1"
+              }
+            })
+              .then((response) => console.log(response))
+              .catch((err) => console.error(err));
+          </b>
+        </code>
+      </pre>
+    </section>
+    <!-- end of nft_token_uri -->
+
+    <!-- nft_metadata -->
+    <section id="nft_metadata">
+      <h2>get metadata</h2>
+      <h3>Example</h3>
+      <pre>
+        <code>
+        // JavaScript example
+          <b>
+            window.L1X.makeRequestCall({
+              contractAddress: "e08b886798933dfeaed6bf10e91ab4ba4bdee759",
+              functionName: "nft_metadata",
+              args: {
+                id: "1"
+              }
+            })
+              .then((response) => console.log(response))
+              .catch((err) => console.error(err));
+          </b>
+        </code>
+      </pre>
+    </section>
+    <!-- end of nft_metadata -->
+
+    <!-- nft_minted_total -->
+    <section id="nft_minted_total">
+      <h2>get nft minted total</h2>
+      <h3>Example</h3>
+      <pre>
+        <code>
+        // JavaScript example
+          <b>
+            window.L1X.makeRequestCall({
+              contractAddress: "e08b886798933dfeaed6bf10e91ab4ba4bdee759",
+              functionName: "nft_minted_total",
+              args: {
+                id: "1"
+              }
+            })
+              .then((response) => console.log(response))
+              .catch((err) => console.error(err));
+          </b>
+        </code>
+      </pre>
+    </section>
+    <!-- end of nft_minted_total -->
+
+    <!-- nft_owner_of -->
+    <section id="nft_owner_of">
+      <h2>get nft owner</h2>
+      <h3>Example</h3>
+      <pre>
+        <code>
+        // JavaScript example
+          <b>
+            window.L1X.makeRequestCall({
+              contractAddress: "e08b886798933dfeaed6bf10e91ab4ba4bdee759",
+              functionName: "nft_owner_of",
+              args: {
+                id: "1"
+              }
+            })
+              .then((response) => console.log(response))
+              .catch((err) => console.error(err));
+          </b>
+        </code>
+      </pre>
+    </section>
+    <!-- end of nft_owner_of -->
+
+    <!-- nft_owned_tokens -->
+    <section id="nft_owned_tokens">
+      <h2>get nft own tokens</h2>
+      <h3>Example</h3>
+      <pre>
+        <code>
+        // JavaScript example
+          <b>
+            window.L1X.makeRequestCall({
+              contractAddress: "e08b886798933dfeaed6bf10e91ab4ba4bdee759",
+              functionName: "nft_owned_tokens",
+              args: {
+                owner: "0x4f65730fa7888120cf21e344542b03969e4f16cc"
+              }
+            })
+              .then((response) => console.log(response))
+              .catch((err) => console.error(err));
+          </b>
+        </code>
+      </pre>
+    </section>
+    <!-- end of nft_owned_tokens -->
+
+    <!-- nft_mint_id_to -->
+    <section id="nft_mint_id_to">
+      <h2>mint nft token id to address</h2>
+      <h3>Example</h3>
+      <pre>
+        <code>
+        // JavaScript example
+          <b>
+            const args = {
+              to: "0xe74193e598fcf576cd099cee5b4ffe6efbea6b8e",
+              id: "1"
+            };
+      
+            window.L1X.sendTransaction({
+              from: "0xe74193e598fcf576cd099cee5b4ffe6efbea6b8e",
+              contractAddress: "e08b886798933dfeaed6bf10e91ab4ba4bdee759",
+              functionName: "nft_mint_id_to",
+              args: args,
+              feeLimit: 100000
+            })
+              .then((response) => console.log(response))
+              .catch((err) => console.error(err));
+          </b>
+        </code>
+      </pre>
+    </section>
+    <!-- end of nft_mint_id_to -->
+
+    <!-- nft_approve -->
+    <section id="nft_approve">
+      <h2>Approve nft for transfer</h2>
+      <h3>Example</h3>
+      <pre>
+        <code>
+        // JavaScript example
+          <b>
+            const args = {
+              spender: "0xe74193e598fcf576cd099cee5b4ffe6efbea6b8e",
+              id: "1"
+            };
+      
+            window.L1X.sendTransaction({
+              from: "0xe74193e598fcf576cd099cee5b4ffe6efbea6b8e",
+              contractAddress: "e08b886798933dfeaed6bf10e91ab4ba4bdee759",
+              functionName: "nft_approve",
+              args: args,
+              feeLimit: 100000
+            })
+              .then((response) => console.log(response))
+              .catch((err) => console.error(err));
+          </b>
+        </code>
+      </pre>
+    </section>
+    <!-- end of nft_approve -->
+
+    <!-- nft_transfer_from -->
+    <section id="nft_transfer_from">
+      <h2>transfer from address to address</h2>
+      <h3>Example</h3>
+      <pre>
+        <code>
+        // JavaScript example
+          <b>
+            const args = {
+              from: "0xe74193e598fcf576cd099cee5b4ffe6efbea6b8e",
+              to: "0x4f65730fa7888120cf21e344542b03969e4f16cc",
+              id: "1"
+            };
+      
+            window.L1X.sendTransaction({
+              from: "0xe74193e598fcf576cd099cee5b4ffe6efbea6b8e",
+              contractAddress: "e08b886798933dfeaed6bf10e91ab4ba4bdee759",
+              functionName: "nft_transfer_from",
+              args: args,
+              feeLimit: 100000
+            })
+              .then((response) => console.log(response))
+              .catch((err) => console.error(err));
+          </b>
+        </code>
+      </pre>
+    </section>
+    <!-- end of nft_transfer_from -->
+
+    <!-- nft_balance_of -->
+    <section id="nft_balance_of">
+      <h2>nft balance for owner address</h2>
+      <h3>Example</h3>
+      <pre>
+        <code>
+        // JavaScript example
+          <b>
+            window.L1X.makeRequestCall({
+              contractAddress: "e08b886798933dfeaed6bf10e91ab4ba4bdee759",
+              functionName: "nft_balance_of",
+              args: {
+                  owner: "0x4f65730fa7888120cf21e344542b03969e4f16cc"
+              }
+            })
+              .then((response) => console.log(response))
+              .catch((err) => console.error(err));
+          </b>
+        </code>
+      </pre>
+    </section>
+    <!-- end of nft_balance_of -->
+
+    <!-- nft_transfer_from -->
+    <section id="nft_set_approval_for_all">
+      <h2>set approve flag for all token for operator</h2>
+      <h3>Example</h3>
+      <pre>
+        <code>
+        // JavaScript example
+          <b>
+            const args = {
+              operator: "0xe74193e598fcf576cd099cee5b4ffe6efbea6b8e",
+              approved: true
+            };
+      
+            window.L1X.sendTransaction({
+              from: "0xe74193e598fcf576cd099cee5b4ffe6efbea6b8e",
+              contractAddress: "e08b886798933dfeaed6bf10e91ab4ba4bdee759",
+              functionName: "nft_set_approval_for_all",
+              args: args,
+              feeLimit: 100000
+            })
+              .then((response) => console.log(response))
+              .catch((err) => console.error(err));
+          </b>
+        </code>
+      </pre>
+    </section>
+    <!-- end of nft_set_approval_for_all -->
+
+    <!-- nft_burn -->
+    <section id="nft_burn">
+      <h2>burn NFT (set balance 0)</h2>
+      <h3>Example</h3>
+      <pre>
+        <code>
+        // JavaScript example
+          <b>
+            const args = {
+              id: "1"
+            };
+      
+            window.L1X.sendTransaction({
+              from: "0xe74193e598fcf576cd099cee5b4ffe6efbea6b8e",
+              contractAddress: "e08b886798933dfeaed6bf10e91ab4ba4bdee759",
+              functionName: "nft_burn",
+              args: args,
+              feeLimit: 100000
+            })
+              .then((response) => console.log(response))
+              .catch((err) => console.error(err));
+          </b>
+        </code>
+      </pre>
+    </section>
+    <!-- end of nft_burn -->
+  </body>
+</html>

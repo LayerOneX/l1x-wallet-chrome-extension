@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="L1X_icon.png" type="image/x-icon" />
+    <link rel="stylesheet" href="style.css" />
+    <title>X-Wallet API's Example</title>
+    <script>
+      function isinstall() {
+        if (window.L1X) {
+          alert("X wallet installed!");
+        } else {
+          alert("X wallet is not installed!");
+        }
+      }
+
+      function connect() {
+        window.L1X.connect()
+          .then((res) => alert(JSON.stringify(res)))
+          .catch((err) => alert(JSON.stringify(err)));
+      }
+
+      function disconnect() {
+        window.L1X.disconnect()
+          .then((res) => alert(JSON.stringify(res)))
+          .catch((err) => alert(JSON.stringify(err)));
+      }
+
+      function connectedAccounts() {
+        window.L1X.getConnectedAccounts()
+          .then((res) => alert(JSON.stringify(res)))
+          .catch((err) => alert(JSON.stringify(err)));
+      }
+
+      async function initContract() {
+        const from = (await window.L1X.getConnectedAccounts()).data[0];
+        const contractParams = {
+          args: { param1: "value1", param2: "value2" }, // Replace with actual args
+          baseContractAddress: "your_base_contract_address",
+          feeLimit: "1000000000000000000", // optional
+          from: from,
+          nonce: "1", // optional
+        };
+        window.L1X.initContract(contractParams)
+          .then((res) => alert(JSON.stringify(res)))
+          .catch((err) => alert(JSON.stringify(err)));
+      }
+
+      async function signMessage() {
+        const from = (await window.L1X.getConnectedAccounts()).data[0];
+        const messageParams = {
+          from: from, // optional
+          message: "Hello, sign this message!",
+        };
+        window.L1X.signMessage(messageParams)
+          .then((res) => alert(JSON.stringify(res)))
+          .catch((err) => alert(JSON.stringify(err)));
+      }
+
+      async function signPayload() {
+        const from = (await window.L1X.getConnectedAccounts()).data[0];
+        const payloadParams = {
+          from: from, // optional
+          payload: {
+            arg: "Sample payload data",
+          },
+        };
+        window.L1X.signPayload(payloadParams)
+          .then((res) => alert(JSON.stringify(res)))
+          .catch((err) => alert(JSON.stringify(err)));
+      }
+
+      async function transferToken(event) {
+        event.preventDefault();
+        const from = (await window.L1X.getConnectedAccounts()).data[0];
+        const formData = new FormData(event.target);
+        const jsonData = {};
+        formData.forEach((value, key) => {
+          jsonData[key] = value;
+        });
+        window.L1X.transferTokens({
+          feeLimit: jsonData.feeLimit, // optional
+          from: from,
+          nonce: jsonData.nonce, // optional
+          receiver: jsonData.receiver,
+          tokenAddress: jsonData.tokenAddress,
+          responseType: jsonData.responseType, // optional
+          value: +jsonData.value,
+        })
+          .then((res) => alert(JSON.stringify(res)))
+          .catch((err) => alert(JSON.stringify(err)));
+        event.target.reset();
+      }
+
+      async function transferNativeToken(event) {
+        event.preventDefault();
+        const from = (await window.L1X.getConnectedAccounts()).data[0];
+        const formData = new FormData(event.target);
+        const jsonData = {};
+        formData.forEach((value, key) => {
+          jsonData[key] = value;
+        });
+        window.L1X.transfer({
+          feeLimit: jsonData.feeLimit, // optional
+          from: from,
+          receiver: jsonData.receiver,
+          nonce: jsonData.nonce, // optional
+          value: jsonData.value,
+        })
+          .then((res) => alert(JSON.stringify(res)))
+          .catch((err) => alert(JSON.stringify(err)));
+        event.target.reset();
+      }
+
+      async function transferNFT(event) {
+        event.preventDefault();
+        const from = (await window.L1X.getConnectedAccounts()).data[0];
+        const formData = new FormData(event.target);
+        const jsonData = {};
+        formData.forEach((value, key) => {
+          jsonData[key] = value;
+        });
+        window.L1X.transferNFT({
+          collectionAddress: jsonData.collectionAddress,
+          feeLimit: jsonData.feeLimit, // optional
+          from: from,
+          nonce: jsonData.nonce, // optional
+          receiver: jsonData.to,
+          tokenId: jsonData.tokenId,
+          value: jsonData.value,
+        })
+          .then((res) => alert(JSON.stringify(res)))
+          .catch((err) => alert(JSON.stringify(err)));
+        event.target.reset();
+      }
+
+      function makeRequestCall() {
+        const requestCallParams = {
+          args: { param1: "value1", param2: "value2" }, // Replace with actual args
+          contractAddress: "your_contract_address",
+          feeLimit: "1000000000000000000", // optional
+          functionName: "your_function_name",
+          nonce: "1", // optional
+        };
+        window.L1X.makeRequestCall(requestCallParams)
+          .then((res) => alert(JSON.stringify(res)))
+          .catch((err) => alert(JSON.stringify(err)));
+      }
+
+      // function sendTransaction() {
+      //   const transactionParams = {
+      //     args: { param1: "value1", param2: "value2" }, // Replace with actual args
+      //     contractAddress: "your_contract_address",
+      //     feeLimit: "1000000000000000000", // optional
+      //     from: "your_wallet_address",
+      //     functionName: "your_function_name",
+      //     nonce: "1", // optional
+      //   };
+
+      //   window.L1X.sendTransaction(transactionParams)
+      //     .then((res) => alert(JSON.stringify(res)))
+      //     .catch((err) => alert(JSON.stringify(err)));
+      // }
+
+      function checkConnection() {
+        window.L1X.isConnected()
+          .then((res) => alert(JSON.stringify(res)))
+          .catch((err) => alert(JSON.stringify(err)));
+      }
+
+      // function activeAccountState() {
+      //   window.L1X.getActiveAccountState()
+      //     .then((res) => alert(JSON.stringify(res)))
+      //     .catch((err) => alert(JSON.stringify(err)));
+      // }
+
+      function getconfig() {
+        window.L1X.getProviderConfig()
+          .then((res) => alert(JSON.stringify(res)))
+          .catch((err) => alert(JSON.stringify(err)));
+      }
+
+      function setConfig(event) {
+        event.preventDefault();
+        const formData = new FormData(event.target);
+        const jsonData = {};
+        formData.forEach((value, key) => {
+          jsonData[key] = value;
+        });
+        window.L1X.setProviderConfig(jsonData)
+          .then((res) => alert(JSON.stringify(res)))
+          .catch((err) => alert(JSON.stringify(err)));
+        event.target.reset();
+      }
+    </script>
+  </head>
+  <body>
+    <header>
+      <h1>X-Wallet API's Example</h1>
+    </header>
+    <nav>
+      <ul>
+        <li><a href="#check-installation">Check Wallet Install Status</a></li>
+        <li><a href="#add-event-listener">Add Event Listener</a></li>
+        <li><a href="#remove-event-listener">Remove Event Listener</a></li>
+        <li>
+          <a href="#remove-all-event-listener">Remove All Event Listener</a>
+        </li>
+        <li><a href="#connect">Connect</a></li>
+        <li><a href="#disconnect">Disconnect</a></li>
+        <li><a href="#connection-status">Connection Status</a></li>
+        <li><a href="#connected-accounts">Connected Accounts</a></li>
+        <li><a href="#init-contract">Initialize Contract</a></li>
+        <li><a href="#sign-message">Sign Message</a></li>
+        <li><a href="#sign-payload">Sign Payload</a></li>
+        <li><a href="#active-account-state">Account State</a></li>
+        <li><a href="#transfer-native-token">Transfer Native Token</a></li>
+        <li><a href="#transfer-token">Transfer Fungible Token</a></li>
+        <li>
+          <a href="#transfer-non-fungible-token">Transfer Non-Fungible Token</a>
+        </li>
+        <li><a href="#make-request-call">Make Request Call</a></li>
+        <li>
+          <a href="#make-state-changing-call">Make State Changing Call</a>
+        </li>
+        <li><a href="#get-provider-config">Get Provider Config</a></li>
+        <li><a href="#set-provider-config">Set Provider Config</a></li>
+      </ul>
+    </nav>
+
+    <!-- #region Check X Wallet Installation Status -->
+    <section id="check-installation">
+      <h2>Install Status</h2>
+      <p>
+        This is section to demonstrate how to check wallet installation status.
+      </p>
+      <h3>Example</h3>
+      <p>Here's an example to check installation status:</p>
+      <pre>
+              <code>
+              // JavaScript example
+              <b>
+                  if (window.L1X != undefined) {
+                    console.log('X Wallet installed!');
+                  } else {
+                    console.log('X Wallet is not installed!');
+                  }
+              </b>
+              </code>
+          </pre>
+      <button onclick="isinstall()">Check Installation Status</button>
+    </section>
+    <!-- #endregion End Of Connect -->
+
+    <!-- Add Event Listener -->
+    <section id="add-event-listener">
+      <h2>Add Event Listener</h2>
+      <p>This section is related to adding an event listener.</p>
+      <h3>Example</h3>
+      <p>Here's an example of adding an event listener:</p>
+      <pre>
+        <code>
+        // JavaScript example
+          <b>
+            function eventHandler(event) {
+              console.log("Event received:", event);
+            }
+            
+            window.L1X.addEventListener("eventName", eventHandler)
+          </b>
+        </code>
+      </pre>
+    </section>
+    <!-- End Of Add Event Listener -->
+
+    <!-- Remove Event Listener -->
+    <section id="remove-event-listener">
+      <h2>Remove Event Listener</h2>
+      <p>This section is related to removing an event listener.</p>
+      <h3>Example</h3>
+      <p>Here's an example of removing an event listener:</p>
+      <pre>
+        <code>
+        // JavaScript example
+          <b>
+            function eventHandler(event) {
+              console.log("Event received:", event);
+            }
+            
+            window.L1X.removeEventListener("eventName", eventHandler)
+          </b>
+        </code>
+      </pre>
+    </section>
+    <!-- End Of Remove Event Listener -->
+
+    <!-- Remove All Event Listener -->
+    <section id="remove-all-event-listener">
+      <h2>Remove All Event Listener</h2>
+      <p>This section is related to removing all event listeners.</p>
+      <h3>Example</h3>
+      <p>Here's an example of removing all event listeners:</p>
+      <pre>
+        <code>
+        // JavaScript example
+          <b>
+            window.L1X.removeAllEventListener()
+          </b>
+        </code>
+      </pre>
+    </section>
+    <!-- End Of Remove All Event Listener -->
+
+    <!-- Connect -->
+    <section id="connect">
+      <h2>Connect</h2>
+      <p>This section is related to the connection process.</p>
+      <h3>Example</h3>
+      <p>Here's an example of connecting to the X-Wallet:</p>
+      <pre>
+              <code>
+              // JavaScript example
+              <b>
+                  window.L1X.connect({
+                    clusterType: "mainnet",
+                    endpoint: "http://YOUR_RPC.com"
+                  })
+                  .then((res) => console.log(res))
+                  .catch((err) => console.error(err));
+              </b>
+              </code>
+          </pre>
+      <button onclick="connect()">Connect</button>
+    </section>
+    <!-- End Of Connect -->
+
+    <!-- Disconnect -->
+    <section id="disconnect">
+      <h2>Disconnect</h2>
+      <p>This section deals with disconnecting from a service or device.</p>
+      <pre>
+        <code>
+        // JavaScript example
+        <b>
+            window.L1X.disconnect()
+            .then((res) => console.log(res))
+            .catch((err) => console.error(err));
+        </b>
+        </code>
+    </pre>
+      <button onclick="disconnect()">Disconnect</button>
+    </section>
+    <!-- End Of Disconnect -->
+
+    <!-- Connected Accounts -->
+    <section id="connected-accounts">
+      <h2>Connected Accounts</h2>
+      <p>This section pertains to the connected accounts.</p>
+      <h3>Example</h3>
+      <p>Here's an example to get connected accounts:</p>
+      <pre>
+        <code>
+        // JavaScript example
+        <b>
+          window.L1X.getConnectedAccounts()
+          .then(res => console.log(res))
+          .catch(err => console.log(err));
+        </b>
+        </code>
+    </pre>
+      <button onclick="connectedAccounts()">Get Connected Accounts</button>
+    </section>
+    <!-- End Of Connected Accounts -->
+
+    <!-- Init Contract -->
+    <section id="init-contract">
+      <h2>Initialize Contract</h2>
+      <p>
+        This section demonstrates how to initialize a contract with a given
+        contract address and ABI.
+      </p>
+      <h3>Example</h3>
+      <p>Here's an example to initialize a contract:</p>
+      <pre>
+        <code>
+        // JavaScript example
+        <b>
+          window.L1X.initContract({
+            args: { param1: "value1", param2: "value2" }, // Replace with actual args
+            baseContractAddress: 'your_base_contract_address',
+            feeLimit: '1000000000000000000', // optional
+            from: 'your_wallet_address',
+            nonce: '1' // optional
+          })
+          .then(res => console.log(res))
+          .catch(err => console.log(err));
+        </b>
+        </code>
+    </pre>
+      <button onclick="initContract()">Init Contract</button>
+    </section>
+    <!-- End Of Init Contract -->
+
+    <!-- Sign Message -->
+    <section id="sign-message">
+      <h2>Sign Message</h2>
+      <p>This section demonstrates how to sign a message using the wallet.</p>
+      <h3>Example</h3>
+      <p>Here's an example to sign a message:</p>
+      <pre>
+        <code>
+        // JavaScript example
+        <b>
+          const messageParams = {
+            from: "your_wallet_address", // optional
+            message: "Hello, sign this message!"
+          };
+          window.L1X.signMessage(messageParams)
+            .then(res => console.log(res))
+            .catch(err => console.log(err));
+        </b>
+        </code>
+    </pre>
+      <button onclick="signMessage()">Sign Message</button>
+    </section>
+    <!-- End Of Sign Message -->
+
+    <!-- Sign Payload -->
+    <section id="sign-payload">
+      <h2>Sign Payload</h2>
+      <p>This section demonstrates how to sign a payload using the wallet.</p>
+      <h3>Example</h3>
+      <p>Here's an example to sign a payload:</p>
+      <pre>
+        <code>
+        // JavaScript example
+        <b>
+          const payloadParams = {
+            from: "your_wallet_address", // optional
+            payload: "JSON string"
+          };
+          window.L1X.signPayload(payloadParams)
+            .then(res => console.log(res))
+            .catch(err => console.log(err));
+        </b>
+        </code>
+    </pre>
+      <button onclick="signPayload()">Sign Payload</button>
+    </section>
+    <!-- End Of Sign Payload -->
+
+    <!-- Connection Status -->
+    <section id="connection-status">
+      <h2>Connection Status</h2>
+      <p>Check the status of the connection.</p>
+      <pre>
+        <code>
+        // JavaScript example
+        <b>
+            window.L1X.isConnected()
+            .then((res) => console.log(res))
+            .catch((err) => console.error(err));
+        </b>
+        </code>
+    </pre>
+      <button onclick="checkConnection()">Check Connection Status</button>
+    </section>
+    <!-- End Of Connection Status -->
+
+    <!-- Active Account State -->
+    <section id="active-account-state">
+      <h2>Active Account State</h2>
+      <p>Retrieve information for the active wallet account.</p>
+      <pre>
+        <code>
+        // JavaScript example
+        <b>
+            window.L1X.getAccountState({ from: "YOUR_ADDERSS" })
+            .then((res) => console.log(res))
+            .catch((err) => console.error(err));
+        </b>
+        </code>
+    </pre>
+      <button onclick="activeAccountState()">Get Active Account State</button>
+    </section>
+    <!-- End Of Active Account State -->
+
+    <!-- Transfer Native Token -->
+    <section id="transfer-native-token">
+      <h2>Transfer L1X Coins</h2>
+      <p>This section deals with transferring native tokens (L1X).</p>
+      <pre>
+              <code>
+              // JavaScript example
+              <b>
+                  window.L1X.transfer({
+                    from: "YOUR WALLET ADDRESS",
+                    value: 1000000000000000000,    // Note - amount in wei
+                    receiver: "df15316b77bf2b2d61e4e1d9c0ebc3ac89129653",
+                    feeLimit: 1000000000000000000,   // optional - in wei
+                    nonce: 1                         // optional
+                  })
+                    .then((response) => console.log(response))
+                    .catch((error) => console.error(error));
+              </b>
+              </code>
+          </pre>
+      <form id="nativeTokenTransferForm" onsubmit="transferNativeToken(event)">
+        <label for="receiver">Receiver Address:</label>
+        <input type="text" id="receiver" name="receiver" required /><br /><br />
+
+        <label for="value">Value:</label>
+        <input type="text" id="value" name="value" required /><br /><br />
+
+        <button type="submit">Transfer</button>
+      </form>
+    </section>
+    <!-- End Of Transfer Token -->
+
+    <!-- Transfer Token -->
+    <section id="transfer-token">
+      <h2>Transfer Fungible Token</h2>
+      <h4><a href="./ft_example.html" target="_blank">See Full Example</a></h4>
+      <p>This section deals with transferring fungible tokens.</p>
+      <pre>
+              <code>
+              // JavaScript example
+              <b>
+                  window.L1X.transferTokens({
+                      from: "FROM_ADDRESS",
+                      tokenAddress: "0x7b52bc819dcc3b4e9987644d7e76f95111b341e7",
+                      receiver: "0x6e005c61463a15589b39379d737ef48d25eff379",
+                      value: 1000000000000000000,    // Note - amount in wei
+                      feeLimit: 1000000000000000000,  // optional - wei
+                      nonce: 1                        // optional
+                  })
+                      .then((res) => console.log(res))
+                      .catch((err) => console.error(err));
+              </b>
+              </code>
+          </pre>
+      <form id="tokenTransferForm" onsubmit="transferToken(event)">
+        <label for="tokenAddress">Token Address:</label>
+        <input
+          type="text"
+          id="tokenAddress"
+          name="tokenAddress"
+          required
+        /><br /><br />
+
+        <label for="receiver">Receiver Address:</label>
+        <input type="text" id="receiver" name="receiver" required /><br /><br />
+
+        <label for="value">Value:</label>
+        <input type="text" id="value" name="value" required /><br /><br />
+
+        <button type="submit">Transfer</button>
+      </form>
+    </section>
+    <!-- End Of Transfer Token -->
+
+    <!-- Transfer NFT -->
+    <section id="transfer-non-fungible-token">
+      <h2>Transfer Non-Fungible Token</h2>
+      <h4><a href="./nft_example.html" target="_blank">See Full Example</a></h4>
+      <p>This section deals with transferring non-fungible tokens (NFTs).</p>
+      <pre>
+            <code>
+            // JavaScript example
+            <b>
+                window.L1X.transferNFT({
+                    from: "YOUR WALLET ADDRESS",
+                    collectionAddress: "0xdd69a01813a936e8a45e4c581293bf4d7011f212",
+                    tokenId: 56,
+                    receiver: "0x1Ed1D98a6a749FB4fcaD68905E64B59Fc1b04AAe",
+                    value: 1000000000000000000,      // Note - amount in wei
+                    feeLimit: 1000000000000000000,   // optional - wei
+                    nonce: 1                         // optional 
+                  })
+                    .then((res) => console.log(res))
+                    .catch((err) => console.error(err));
+            </b>
+            </code>
+        </pre>
+      <form id="nftTransfer" onsubmit="transferNFT(event)">
+        <label for="collectionAddress">Collection Address:</label>
+        <input
+          type="text"
+          id="collectionAddress"
+          name="collectionAddress"
+          required
+        /><br /><br />
+
+        <label for="tokenId">Token Id:</label>
+        <input type="text" id="tokenId" name="tokenId" required /><br /><br />
+
+        <label for="receiver">Receiver Address:</label>
+        <input type="text" id="receiver" name="receiver" required /><br /><br />
+
+        <label for="value">Value:</label>
+        <input type="number" id="value" name="value" required /><br /><br />
+
+        <button type="submit">Transfer</button>
+      </form>
+    </section>
+    <!-- End Of Transfer NFT -->
+
+    <!-- Make Request Call -->
+    <section id="make-request-call">
+      <h2>Make Request Call</h2>
+      <p>This section demonstrates how to make a request call.</p>
+      <pre>
+          <code>
+          // JavaScript example
+          <b>
+            window.L1X.makeRequestCall({
+              contractAddress: "a11215184b2adca6a5df8d182d31f313a40901df",
+              functionName: "get_token_details",
+              args: {
+                wallet_address: "5d0407bccbdb695e448efbff22110725abda6cfd"
+              },
+              feeLimit: 1000000000000000000,   // optional - decimalised fee limit
+              nonce: 1                         // optional
+            })
+                .then((response) => console.log(response))
+                .catch((err) => console.error(err));
+          </b>
+          </code>
+      </pre>
+      <!-- <button onclick="makeRequestCall()">Make Request Call</button> -->
+    </section>
+    <!-- End Of Request Call -->
+
+    <section id="make-state-changing-call">
+      <h2>Make State Changing Call</h2>
+      <p>This section demonstrates how to make state-changing calls.</p>
+      <pre>
+        <code>
+        // JavaScript example
+        <b>
+            const transactionData = {
+                destination_contract_address: "756d9bd034f1823d5accab7b476e32f3449b241e",
+                source_contract_address: "1339Ef6a842D1B705Cb28Eb9f1B574F95AdF25aC",
+                source_chain: "Arbitrum",
+                event_filters: [
+                  "22af61b88ab0f88bd7a319bd83451543ad6edb0419406db1097f1dc39d4d0b94",
+                ],
+              };
+
+            window.L1X.sendTransaction({
+              from: "YOUR WALLET ADDRESS",
+              contractAddress: "c07d8c41f79dd00a2886783711058ef74d44e418",
+              functionName: "register_new_source",
+              args: transactionData,
+              feeLimit: 1000000000000000000,   // optional - decimalised fee limit
+              nonce: 1                         // optional
+            })
+                .then((response) => {
+                  console.log("Transaction successful:", response);
+                })
+                .catch((error) => {
+                  console.error("Transaction failed:", error);
+                });
+        </b>
+        </code>
+      </pre>
+      <!-- <button onclick="sendTransaction()">Make State Change Call</button> -->
+    </section>
+
+    <!-- #region Get Provider Config -->
+    <section id="get-provider-config">
+      <h2>Get Provider Config</h2>
+      <p>Example of retrieving provider configuration.</p>
+      <pre>
+        <code>
+        // JavaScript example
+        <b>
+            window.L1X.getProviderConfig()
+                .then((response) => {
+                  console.log("Provider config:", response);
+                })
+                .catch((error) => {
+                  console.error(error);
+                });
+        </b>
+        </code>
+      </pre>
+      <button onclick="getconfig()">Get Provider Config</button>
+    </section>
+    <!-- #endregion Get Provider Config -->
+
+    <!-- #region Set Provider Config -->
+    <section id="set-provider-config">
+      <h2>Set Provider Config</h2>
+      <p>Example of configuring provider settings.</p>
+      <pre>
+        <code>
+        // JavaScript example
+        <b>
+            window.L1X.setProviderConfig({
+              clusterType: "YOUR_CLUSTER_TYPE";
+              endpoint?: "YOUR_RPC_ENDPOINT";
+            })
+                .then((response) => {
+                  console.log("Provider config:", response);
+                })
+                .catch((error) => {
+                  console.error(error);
+                });
+        </b>
+        </code>
+      </pre>
+      <form id="provider-config" onsubmit="setConfig(event)">
+        <label for="clusterType">Cluster Type:</label>
+        <input
+          type="text"
+          id="clusterType"
+          name="clusterType"
+          required
+        /><br /><br />
+
+        <label for="endpoint">End Point:</label>
+        <input type="text" id="endpoint" name="endpoint" required /><br /><br />
+        <button>Set Provider Config</button>
+      </form>
+    </section>
+    <!-- #endregion Get Provider Config -->
+  </body>
+</html>
