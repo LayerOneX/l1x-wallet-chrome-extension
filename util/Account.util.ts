@@ -2,7 +2,7 @@ import { ExtensionStorage } from "./ExtensionStorage.util";
 import { Logger } from "./Logger.util";
 import { Util } from "./Util";
 
-export async function getAccount(publicKey: string) {
+export async function getAccount(publicKey: string, networkType?: VirtualMachineType) {
   const walletAccounts = await ExtensionStorage.get("wallets");
   if (walletAccounts) {
     const { ACTIVE, ...accounts } = walletAccounts;
@@ -12,7 +12,7 @@ export async function getAccount(publicKey: string) {
         (account) =>
           account.publicKey &&
           Util.removePrefixOx(account.publicKey).toLowerCase() ==
-            Util.removePrefixOx(publicKey).toLowerCase()
+          Util.removePrefixOx(publicKey).toLowerCase() && (account.type == networkType || networkType == undefined)
       );
   }
   return undefined;
@@ -70,8 +70,8 @@ export async function connectAccountsToSite(
     // update accounts if site already connected or else add site
     existingSite
       ? (connectedSites = await Promise.all(
-          connectedSites.map((el) => (el.url == site.url ? connection : el))
-        ))
+        connectedSites.map((el) => (el.url == site.url ? connection : el))
+      ))
       : connectedSites.push(connection);
     // udpate storage
     await ExtensionStorage.set("connectedSites", connectedSites);

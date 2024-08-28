@@ -26,7 +26,7 @@ const TransferNFT: FC<
   const [loader, setLoader] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isTransferApproved, setIsTransferApproved] = useState(false);
-  const [feelimit, setFeelimit] = useState("");
+  const [feelimit, setFeelimit] = useState<string>();
   const [nonce, setNonce] = useState("");
 
   useEffect(() => {
@@ -51,7 +51,7 @@ const TransferNFT: FC<
     const feelimit = await transaction?.virtualMachine.getEstimateFee(
       transaction.providerAttrib
     );
-    setFeelimit(transaction.feeLimit ?? feelimit ?? "");
+    setFeelimit(transaction.feeLimit ?? feelimit ?? undefined);
     setNonce(transaction.nonce ?? nonce ?? "");
   }
 

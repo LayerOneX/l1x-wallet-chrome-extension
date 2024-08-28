@@ -23,7 +23,7 @@ const TransferNativeToken: FC<
   const [tokenDetailLoader, setTokenDetailLoader] = useState(true);
   const [loader, setLoader] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [feelimit, setFeelimit] = useState("");
+  const [feelimit, setFeelimit] = useState<string>();
   const [nonce, setNonce] = useState("");
   const transactionAmount = tokenDetails
     ? +transaction.amount / 10 ** tokenDetails.decimals
@@ -51,8 +51,8 @@ const TransferNativeToken: FC<
     const feelimit = await transaction?.virtualMachine.getEstimateFee(
       transaction.providerAttrib
     );
-    setFeelimit(transaction.feeLimit ?? feelimit ?? "");
-    setNonce(transaction.nonce ?? nonce ?? "");
+    setFeelimit(transaction.feeLimit ?? feelimit);
+    setNonce(transaction.nonce ?? nonce);
   }
 
   async function fetchNativeTokenDetails() {

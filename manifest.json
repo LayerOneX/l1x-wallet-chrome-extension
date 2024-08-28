@@ -1,13 +1,13 @@
 {
   "manifest_version": 3,
   "name": "x_Wallet",
-  "version": "1.0.1",
+  "version": "2.0.2",
   "description": "x_Wallet is a next-gen crypto wallet with seamless, unmatched interoperability and interface on the market.",
   "background": {
     "service_worker": "service_worker/index.js",
     "type": "module"
   },
-  "permissions": ["storage", "activeTab", "tabs", "background", "management"],
+  "permissions": ["storage", "activeTab", "management"],
   "action": {
     "default_icon": {
       "16": "logo.png",

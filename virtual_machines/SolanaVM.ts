@@ -71,14 +71,15 @@ export default class SolanaVM extends VirtualMachine {
     this.publicKey = publicKey;
   }
 
-  #validateNewAccount(
+  async #validateNewAccount(
     wallets: L1XAccounts,
     accountName: string,
-    publicKey: string
+    publicKey: string,
+    source: 'create' | 'import'
   ) {
     // do not import if name exists
     if (
-      wallets.L1X.findIndex(
+      wallets["NON-EVM"].findIndex(
         (account) =>
           accountName.trim() && account.accountName == accountName.trim()
       ) >= 0
@@ -90,13 +91,16 @@ export default class SolanaVM extends VirtualMachine {
     }
 
     // do not import if wallet present
-    if (
-      wallets.L1X.findIndex(
-        (account) =>
-          Util.removePrefixOx(account.publicKey) ==
-          Util.removePrefixOx(publicKey)
-      ) >= 0
-    ) {
+    const accountIndex = wallets["NON-EVM"].findIndex(
+      (account) =>
+        Util.removePrefixOx(account.publicKey) ==
+        Util.removePrefixOx(publicKey)
+    )
+    if (accountIndex >= 0) {
+      if (source == 'create') {
+        wallets["NON-EVM"][accountIndex].createdFromSeed = true;
+        await this.updateAccount(wallets["NON-EVM"][accountIndex]);
+      }
       throw {
         errorMessage:
           "Account already exist. Please try with different private key.",
@@ -108,7 +112,8 @@ export default class SolanaVM extends VirtualMachine {
 
   async importPrivateKey(
     privateKey: string,
-    accountName: string
+    accountName: string,
+    createdFromSeed?: boolean
   ): Promise<boolean> {
     try {
       if (!accountName) {
@@ -128,7 +133,8 @@ export default class SolanaVM extends VirtualMachine {
       await this.#validateNewAccount(
         wallets,
         accountName,
-        solWallet.publicKey.toBase58()
+        solWallet.publicKey.toBase58(),
+        'import'
       );
 
       const newWallet: IXWalletAccount = {
@@ -138,6 +144,7 @@ export default class SolanaVM extends VirtualMachine {
         type: "NON-EVM",
         createdAt: Date.now(),
         icon: solanaIcon,
+        createdFromSeed: createdFromSeed ?? false
       };
       wallets["NON-EVM"].push(newWallet);
       // set imported wallet as active wallet
@@ -181,7 +188,8 @@ export default class SolanaVM extends VirtualMachine {
       await this.#validateNewAccount(
         wallets,
         accountName,
-        solWallet.publicKey.toBase58()
+        solWallet.publicKey.toBase58(),
+        'create'
       );
 
       const newWallet: IXWalletAccount = {
@@ -191,6 +199,7 @@ export default class SolanaVM extends VirtualMachine {
         type: "NON-EVM",
         createdAt: Date.now(),
         icon: solanaIcon,
+        createdFromSeed: true
       };
       // add account
       wallets["NON-EVM"].push(newWallet);

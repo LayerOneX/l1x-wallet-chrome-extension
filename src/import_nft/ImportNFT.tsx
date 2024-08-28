@@ -128,7 +128,7 @@ const ImportNFT = () => {
                 }))
               }
             />
-            <span className="text-xs text-gray-700">XWallet supports ERC-720 token standard.</span>
+            <span className="text-xs text-gray-700">XWallet supports ERC-721 token standard.</span>
           </div>
         </div>
         <div className="mt-5">

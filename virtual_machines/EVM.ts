@@ -161,10 +161,11 @@ export default class EVM extends VirtualMachine {
     this.publicKey = publicKey;
   }
 
-  #validateNewAccount(
+  async #validateNewAccount(
     wallets: L1XAccounts,
     accountName: string,
-    publicKey: string
+    publicKey: string,
+    source: 'create' | 'import'
   ) {
     // do not import if name exists
     if (
@@ -180,13 +181,16 @@ export default class EVM extends VirtualMachine {
     }
 
     // do not import if wallet present
-    if (
-      wallets.EVM.findIndex(
-        (account) =>
-          Util.removePrefixOx(account.publicKey) ==
-          Util.removePrefixOx(publicKey)
-      ) >= 0
-    ) {
+    const accountIndex = wallets.EVM.findIndex(
+      (account) =>
+        Util.removePrefixOx(account.publicKey.trim()) ==
+        Util.removePrefixOx(publicKey.trim())
+    )
+    if (accountIndex >= 0) {
+      if (source == 'create') {
+        wallets.EVM[accountIndex].createdFromSeed = true;
+        await this.updateAccount(wallets.EVM[accountIndex]);
+      }
       throw {
         errorMessage:
           "Account already exist. Please try with different private key.",
@@ -198,7 +202,8 @@ export default class EVM extends VirtualMachine {
 
   async importPrivateKey(
     privateKey: string,
-    accountName: string
+    accountName: string,
+    createdFromSeed?: boolean
   ): Promise<boolean> {
     try {
       if (!accountName) {
@@ -215,7 +220,7 @@ export default class EVM extends VirtualMachine {
       };
       const evmWallet = new ethers.Wallet(privateKey);
 
-      await this.#validateNewAccount(wallets, accountName, evmWallet.address);
+      await this.#validateNewAccount(wallets, accountName, evmWallet.address, 'import');
 
       const newWallet: IXWalletAccount = {
         privateKey: privateKey,
@@ -224,6 +229,7 @@ export default class EVM extends VirtualMachine {
         type: "EVM",
         createdAt: Date.now(),
         icon: this.icon,
+        createdFromSeed: createdFromSeed ?? false
       };
       wallets.EVM.push(newWallet);
       // set imported wallet as active wallet
@@ -261,7 +267,7 @@ export default class EVM extends VirtualMachine {
         };
       }
       const standardPath = "m/44'/60'/0'/0";
-      const path = `${standardPath}/${wallets.EVM.length}`;
+      const path = `${standardPath}/${wallets.EVM.filter(el => el.createdFromSeed == true).length}`;
       const hdNode = ethers.HDNodeWallet.fromPhrase(pharse);
       if (!hdNode || !hdNode.mnemonic) {
         throw { errorMessage: "Failed to create HD node wallet." };
@@ -271,7 +277,7 @@ export default class EVM extends VirtualMachine {
         path
       );
 
-      await this.#validateNewAccount(wallets, accountName, etherWallet.address);
+      await this.#validateNewAccount(wallets, accountName, etherWallet.address, 'create');
 
       const newWallet: IXWalletAccount = {
         privateKey: etherWallet.privateKey,
@@ -280,6 +286,7 @@ export default class EVM extends VirtualMachine {
         type: "EVM",
         createdAt: Date.now(),
         icon: this.icon,
+        createdFromSeed: true
       };
       // update class instance public key
       this.publicKey = etherWallet.address;

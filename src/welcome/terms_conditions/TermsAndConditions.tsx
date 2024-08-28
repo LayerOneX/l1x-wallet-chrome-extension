@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import futureWalletAnimation from "@assets/images/future-crypto.gif";
 import layeronexLogoSmall from "@assets/images/l1x-icon.png";
 import { useState } from "react";
-import ManifestJSON from "../../../manifest.json";
+import ManifestJSON from "../../../manifest.json"; 
 
 const TermsAndConditions = (props: ITermsAndConditionsProps) => {
   const [termsAccepted, setTermsAccepted] = useState(false);

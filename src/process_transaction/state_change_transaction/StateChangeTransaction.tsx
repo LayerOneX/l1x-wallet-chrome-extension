@@ -9,7 +9,6 @@ import {
   ProviderAttrib,
   VMStateChangeCallArg,
 } from "@l1x/l1x-wallet-sdk";
-import { Config } from "@util/Config.util";
 
 const StateChangeTransaction: FC<
   IStateChangeCall & {
@@ -28,8 +27,8 @@ const StateChangeTransaction: FC<
   // const appContext = useContext(AppContext);
   const [loader, setLoader] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [feelimit, _setFeelimit] = useState(
-    transaction.feeLimit ?? Config.l1xFeeLimit
+  const [feelimit, setFeelimit] = useState(
+    transaction.feeLimit
   );
   const [nonce, setNonce] = useState<string>();
 
@@ -51,6 +50,10 @@ const StateChangeTransaction: FC<
     const nonce = await transaction.virtualMachine.getCurrentNonce(
       transaction.providerAttrib
     );
+    const feelimit = await transaction?.virtualMachine.getEstimateFee(
+      transaction.providerAttrib
+    );
+    setFeelimit(transaction.feeLimit ?? feelimit ?? undefined);
     setNonce(transaction.nonce || nonce || undefined);
   }
 
@@ -61,7 +64,7 @@ const StateChangeTransaction: FC<
 
   async function validateTransaction(hash: string) {
     await new Promise((resolve) => {
-      setTimeout(resolve, 3000);
+      setTimeout(resolve, 5000);
     });
     const receipt = await l1xProvider.core.getTransactionReceipt({ hash });
     return (
@@ -190,10 +193,10 @@ const StateChangeTransaction: FC<
             <b className="font-medium me-2">Function Name:</b>
             {transaction.functionName || ""}
           </h4>
-          <h4 className="flex items-center  text-sm mb-2">
+          {/* <h4 className="flex items-center  text-sm mb-2">
             <b className="font-medium me-2">Fee limit:</b>
             {feelimit || ""}
-          </h4>
+          </h4> */}
           <h4 className="flex items-center  text-sm mb-2">
             <b className="font-medium me-2">Nonce:</b>
             {nonce || ""}

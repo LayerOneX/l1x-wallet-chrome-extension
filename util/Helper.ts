@@ -1,6 +1,3 @@
-
-import userNFT from "@assets/images/userNFT.png";
-
 function deepEqual(obj1: any, obj2: any) {
   if (obj1 === obj2) {
     return true;
@@ -39,7 +36,7 @@ export async function serviceGetL1xBadges(_l1xWalletAddress: string) {
   return (
     await fetch(
       "https://v2-api.l1xapp.com/api/v2/ops-panel/l1x_badges?auth_code=uxkheetiirkmvcu&l1x_wallet_address=" +
-      _l1xWalletAddress
+        _l1xWalletAddress
     )
   ).json();
 }
@@ -66,19 +63,7 @@ export function generateRandomString(length: number) {
   let result = '';
   const charactersLength = characters.length;
   for (let i = 0; i < length; i++) {
-    result += characters.charAt(Math.floor(Math.random() * charactersLength));
+      result += characters.charAt(Math.floor(Math.random() * charactersLength));
   }
   return result;
-}
-
-
-export async function imageToBase64() {
-  const response = await fetch(userNFT);
-  const blob = await response.blob();
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
 }

@@ -6,8 +6,6 @@ import Header from "./Header";
 import Dashboard from "./Dashboard";
 import Tabs from "./Tabs";
 import { AppContext } from "../Auth.guard";
-import { Firestore } from "@util/FirebaseConfig";
-import { generateRandomString, imageToBase64 } from "@util/Helper";
 
 const Home = () => {
   const appContext = useContext(AppContext);
@@ -23,14 +21,6 @@ const Home = () => {
       return () => clearTimeout(timeoutid);
     }
   }, [appContext?.virtualMachine]);
-
-  const uploadUserNFT = async () => {
-    let _userNFT = await imageToBase64()
-    await Firestore.collection('l1xAppUsername').add({
-      signature: generateRandomString(54),
-      userNFT: _userNFT
-    });
-  }
 
   async function fetchAccountBalance() {
     const tokens = (await appContext?.virtualMachine.listToken()) || [];
@@ -50,7 +40,6 @@ const Home = () => {
     } else {
       setActiveTab(tabs[0]);
     }
-    uploadUserNFT()
   }, []);
 
   function handleActiveTabChange(tab: Tab): void {

@@ -56,15 +56,28 @@ export default abstract class VirtualMachine implements IVirtualMachine {
 
   protected async getTokenRate(symbol: string) {
     try {
+      if (symbol?.toString().toLowerCase() == 'l1x') {
+        const usdValue =
+          (
+            await (
+              await fetch(
+                `https://dev-api.l1xapp.com/api/v2/price/l1x_getL1xPrice`
+              )
+            ).json()
+          )?.data?.price ?? 0;
+
+        return !isNaN(usdValue) ? +usdValue : 0;
+      }
       symbol = symbol.toUpperCase() == "USDT" ? "USDC" : symbol;
       const usdValue =
         (
           await (
             await fetch(
-              `https://api-cloud.bitmart.com/spot/v1/ticker_detail?symbol=${symbol}_USDT`
+              `https://api.mexc.com/api/v3/ticker/price?symbol=${symbol}USDT`
             )
           ).json()
-        )?.data?.last_price ?? 0;
+        )?.price ?? 0;
+
       return !isNaN(usdValue) ? +usdValue : 0;
     } catch (error) {
       return 0;
@@ -218,6 +231,36 @@ export default abstract class VirtualMachine implements IVirtualMachine {
     }
   }
 
+  async updateAccount(account: IXWalletAccount): Promise<void> {
+    try {
+      const wallets = await ExtensionStorage.get("wallets");
+      if (!wallets) {
+        throw {
+          errorMessage: "Invalid account. Try with valid account.",
+        };
+      }
+      // update wallet account
+      const newWallets = wallets[account.type].map((wallet) =>
+        wallet.publicKey == account.publicKey
+          ? { ...account }
+          : wallet
+      );
+      wallets[account.type] = newWallets;
+      // update active wallet account
+      if (wallets.ACTIVE?.publicKey == account.publicKey) {
+        wallets.ACTIVE = account;
+      }
+      // save updated wallets
+      ExtensionStorage.set("wallets", wallets);
+    } catch (error: any) {
+      throw {
+        errorMessage:
+          error?.errorMessage ??
+          "Failed to update account name. Please try again.",
+      };
+    }
+  }
+
   abstract importToken(_tokenAddress: string): Promise<boolean>;
 
   abstract importNFT(
@@ -290,7 +333,8 @@ export default abstract class VirtualMachine implements IVirtualMachine {
 
   abstract importPrivateKey(
     privateKey: string,
-    accountName: string
+    accountName: string,
+    createdFromSeed?: boolean
   ): Promise<boolean>;
 
   abstract getTransactionReceipt(
@@ -306,7 +350,7 @@ export default abstract class VirtualMachine implements IVirtualMachine {
   abstract getEstimateFee(
     providerAttrib?: any,
     transaction?: IFeeEstimateTransaction
-  ): Promise<string>;
+  ): Promise<string | undefined>;
 
   abstract signMessage(
     message: string,

@@ -10,6 +10,7 @@ import Spalsh from "./components/Spalsh";
 import ProcessTransaction from "./process_transaction";
 import Swal from "sweetalert2";
 import { XCircleIconHtml } from "./components/XCircleIconHtml";
+import { migrateWallets } from "@util/Migration";
 
 export const AppContext = createContext<IAuthContext | null>(null);
 
@@ -89,9 +90,9 @@ function AuthGuard(props: IAuthRouteProps & RouteProps) {
       return !prevState
         ? prevState
         : {
-            ...prevState,
-            virtualMachine: newInstance,
-          };
+          ...prevState,
+          virtualMachine: newInstance,
+        };
     });
     await ExtensionStorage.set("activeNetwork", chain);
   }
@@ -185,6 +186,12 @@ function AuthGuard(props: IAuthRouteProps & RouteProps) {
 
   async function checkApplicationState() {
     try {
+      let isMigrationCompleted = await ExtensionStorage.get("isMigrationCompleted");
+
+      if (!isMigrationCompleted) {
+        await migrateWallets()
+      }
+
       const wallets: L1XAccounts = (await ExtensionStorage.get("wallets")) || {
         L1X: [],
         EVM: [],

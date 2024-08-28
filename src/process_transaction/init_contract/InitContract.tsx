@@ -5,7 +5,6 @@ import { Tooltip } from "react-tooltip";
 import { Util } from "@util/Util";
 import Spinner from "../../components/Spinner";
 import { L1XProvider, ProviderAttrib } from "@l1x/l1x-wallet-sdk";
-import { Config } from "@util/Config.util";
 
 const InitContract: FC<
   IInitContract & {
@@ -25,7 +24,7 @@ const InitContract: FC<
   const [loader, setLoader] = useState(false);
   const [copied, setCopied] = useState(false);
   const [feelimit, _setFeelimit] = useState(
-    transaction.feeLimit ?? Config.l1xFeeLimit
+    transaction.feeLimit
   );
   // const [nonce, setNonce] = useState<string>();
 
@@ -57,7 +56,7 @@ const InitContract: FC<
 
   async function validateTransaction(hash: string) {
     await new Promise((resolve) => {
-      setTimeout(resolve, 3000);
+      setTimeout(resolve, 5000);
     });
     const receipt = await l1xProvider.core.getTransactionReceipt({ hash });
     return (
@@ -82,7 +81,7 @@ const InitContract: FC<
           arguments: transaction.arguments
         },
         private_key: Util.removePrefixOx(transaction.account.privateKey),
-        fee_limit: parseFloat(feelimit.toString()),
+        fee_limit: feelimit as any,
         // nonce: nonce && !isNaN(nonce as any) ? +nonce : undefined,
       });
       // validate transaction
@@ -192,10 +191,10 @@ const InitContract: FC<
             <b className="font-medium me-2">Transaction Type:</b>
             Initialize Smart Contract
           </h4>
-          <h4 className="flex items-center  text-sm mb-2">
+          {/* <h4 className="flex items-center  text-sm mb-2">
             <b className="font-medium me-2">Fee Limit:</b>
             {feelimit}
-          </h4>
+          </h4> */}
         </div>
 
         {/* Estimate changes */}

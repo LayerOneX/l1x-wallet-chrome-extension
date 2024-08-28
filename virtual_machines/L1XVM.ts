@@ -69,10 +69,11 @@ export class L1XVM extends VirtualMachine {
     );
   }
 
-  #validateNewAccount(
+  async #validateNewAccount(
     wallets: L1XAccounts,
     accountName: string,
-    publicKey: string
+    publicKey: string,
+    source: 'create' | 'import'
   ) {
     // do not import if name exists
     if (
@@ -88,13 +89,16 @@ export class L1XVM extends VirtualMachine {
     }
 
     // do not import if wallet present
-    if (
-      wallets.L1X.findIndex(
-        (account) =>
-          Util.removePrefixOx(account.publicKey.trim()) ==
-          Util.removePrefixOx(publicKey.trim())
-      ) >= 0
-    ) {
+    const accountIndex = wallets.L1X.findIndex(
+      (account) =>
+        Util.removePrefixOx(account.publicKey.trim()) ==
+        Util.removePrefixOx(publicKey.trim())
+    )
+    if (accountIndex >= 0) {
+      if (source == 'create') {
+        wallets.L1X[accountIndex].createdFromSeed = true;
+        await this.updateAccount(wallets.L1X[accountIndex]);
+      }
       throw {
         errorMessage:
           "Account already exist. Please try with different private key.",
@@ -106,7 +110,8 @@ export class L1XVM extends VirtualMachine {
 
   async importPrivateKey(
     privateKey: string,
-    accountName: string
+    accountName: string,
+    createdFromSeed?: boolean
   ): Promise<boolean> {
     try {
       if (!accountName) {
@@ -128,7 +133,8 @@ export class L1XVM extends VirtualMachine {
       await this.#validateNewAccount(
         wallets,
         accountName,
-        l1xWallet.address_with_prefix
+        l1xWallet.address_with_prefix,
+        'import'
       );
 
       const newWallet: IXWalletAccount = {
@@ -138,6 +144,7 @@ export class L1XVM extends VirtualMachine {
         type: "L1X",
         createdAt: Date.now(),
         icon: this.icon,
+        createdFromSeed: createdFromSeed ?? false
       };
       wallets.L1X.push(newWallet);
       // set imported wallet as active wallet
@@ -174,7 +181,7 @@ export class L1XVM extends VirtualMachine {
         };
       }
       const standardPath = "m/44'/60'/0'/0";
-      const path = `${standardPath}/${wallets.L1X.length}`;
+      const path = `${standardPath}/${wallets.L1X.filter(el => el.createdFromSeed == true).length}`;
       const hdNode = ethers.HDNodeWallet.fromPhrase(pharse);
       if (!hdNode || !hdNode.mnemonic) {
         throw { errorMessage: "Failed to create HD node wallet." };
@@ -189,7 +196,8 @@ export class L1XVM extends VirtualMachine {
       await this.#validateNewAccount(
         wallets,
         accountName,
-        l1xWallet.address_with_prefix
+        l1xWallet.address_with_prefix,
+        'create'
       );
       const newWallet: IXWalletAccount = {
         privateKey: etherWallet.privateKey,
@@ -198,6 +206,7 @@ export class L1XVM extends VirtualMachine {
         type: "L1X",
         createdAt: Date.now(),
         icon: this.icon,
+        createdFromSeed: true
       };
       // update class instance public key
       this.publicKey = l1xWallet.address_with_prefix;
@@ -530,9 +539,7 @@ export class L1XVM extends VirtualMachine {
   }
 
   async #validateTransaction(hash: string, providerAttrib?: ProviderAttrib) {
-    await new Promise((resolve) => {
-      setTimeout(resolve, 3000);
-    });
+    await new Promise((resolve) => setTimeout(() => resolve(true), 5000));
     const receipt = await this.getProvider(
       providerAttrib
     ).core.getTransactionReceipt({
@@ -583,7 +590,7 @@ export class L1XVM extends VirtualMachine {
     value: number, // value must me in decimal places
     privateKey: string,
     providerAttrib?: ProviderAttrib,
-    feeLimit?: string,
+    _feeLimit?: string,
     _nonce?: string
   ) {
     try {
@@ -612,7 +619,7 @@ export class L1XVM extends VirtualMachine {
           value: value,
         },
         private_key: Util.removePrefixOx(privateKey.trim()),
-        fee_limit: feeLimit ?? (Config.l1xFeeLimit as any),
+        // fee_limit: feeLimit ?? (Config.l1xFeeLimit as any),
       });
       const txStatus = await this.#validateTransaction(
         response.hash,
@@ -637,7 +644,7 @@ export class L1XVM extends VirtualMachine {
     receiverAddress: string,
     privateKey: string,
     providerAttrib?: ProviderAttrib,
-    feeLimit?: string,
+    _feeLimit?: string,
     _nonce?: string
   ): Promise<{ hash: string }> {
     try {
@@ -663,9 +670,9 @@ export class L1XVM extends VirtualMachine {
           token_id: +tokenId,
         },
         private_key: Util.removePrefixOx(privateKey.trim()),
-        fee_limit: feeLimit ?? (Config.l1xFeeLimit as any),
+        // fee_limit: feeLimit ?? (Config.l1xFeeLimit as any),
       });
-      await new Promise((resolve) => setTimeout(() => resolve(true), 3000));
+      await new Promise((resolve) => setTimeout(() => resolve(true), 5000));
       // validate nft owner
       const ownedAfterTransfer = await this.isOwnedNFT(
         collectionAddress,
@@ -695,7 +702,7 @@ export class L1XVM extends VirtualMachine {
     tokenId: string,
     privateKey: string,
     providerAttrib?: ProviderAttrib,
-    feeLimit?: number
+    _feeLimit?: number
   ): Promise<boolean> {
     try {
       // validate nft ownership
@@ -720,7 +727,7 @@ export class L1XVM extends VirtualMachine {
           token_id: +tokenId as any,
         },
         private_key: Util.removePrefixOx(privateKey.trim()),
-        fee_limit: feeLimit
+        // fee_limit: feeLimit
       });
       // validate transaction
       const txStatus = await this.#validateTransaction(
@@ -767,8 +774,8 @@ export class L1XVM extends VirtualMachine {
   async getEstimateFee(
     _providerAttrib?: any,
     _transaction?: IFeeEstimateTransaction
-  ): Promise<string> {
-    return Config.l1xFeeLimit.toFixed();
+  ): Promise<string | undefined> {
+    return undefined;         // l1x wallet sdk will handle fee limit
   }
 
   async signMessage(

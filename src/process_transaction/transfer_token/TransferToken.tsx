@@ -23,7 +23,7 @@ const TransferToken: FC<
   const [loader, setLoader] = useState(false);
   const [tokenDetailLoader, setTokenDetailLoader] = useState(true);
   const [copied, setCopied] = useState(false);
-  const [feelimit, setFeelimit] = useState("");
+  const [feelimit, setFeelimit] = useState<string>();
   const [nonce, setNonce] = useState("");
   const transactionAmount = tokenDetails
     ? +transaction.amount / 10 ** tokenDetails.decimals
@@ -59,7 +59,7 @@ const TransferToken: FC<
         amount: transaction.amount,
       }
     );
-    setFeelimit(transaction.feeLimit ?? feelimit ?? "");
+    setFeelimit(transaction.feeLimit ?? feelimit ?? undefined);
   }
 
   async function fetchTokenDetails() {

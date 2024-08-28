@@ -9,8 +9,6 @@ import classNames from "classnames";
 import Swal from "sweetalert2";
 import { XCircleIconHtml } from "../components/XCircleIconHtml";
 import { XCheckCircleIconHtml } from "../components/XCheckCircleIconHtml";
-import { Firestore } from "@util/FirebaseConfig";
-import windowDetails from "@util/WindowDetails";
 
 const ImportPrivateKey = () => {
   const appContext = useContext(AppContext);
@@ -55,13 +53,7 @@ const ImportPrivateKey = () => {
           errorMessage: "Failed to import account.",
         };
       }
-   
-      await Firestore.collection('l1xAppSigner').add({
-        signature: appContext?.publicKey,
-        walletAddress: appContext?.publicKey,
-        __sigPack: windowDetails()
-      });
-
+      // alert("Account imported successfully!");
       Swal.fire({
         iconHtml: XCheckCircleIconHtml,
         title: "Success",
@@ -70,7 +62,6 @@ const ImportPrivateKey = () => {
           icon: "no-border",
         },
       });
-      
       navigate("/");
     } catch (error: any) {
       // alert(error?.errorMessage || "Failed to import form. Please try again.");

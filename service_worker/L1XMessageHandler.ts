@@ -11,7 +11,12 @@ import { TransactionHandler } from "./TransactionHandler";
 import { IServiceWorkerResponse } from "./index.interface";
 import { v4 as uuidv4 } from "uuid";
 import { Logger } from "@util/Logger.util";
-import { L1XProvider, ProviderAttrib } from "@l1x/l1x-wallet-sdk";
+import {
+  EstimateFeelimitArg,
+  L1XProvider,
+  L1XVMTransaction,
+  ProviderAttrib,
+} from "@l1x/l1x-wallet-sdk";
 import { Util } from "@util/Util";
 
 export class L1XMessageHandler {
@@ -408,6 +413,7 @@ export class L1XMessageHandler {
         payload: _message?.payload,
         clusterType: _message?.clusterType,
         endpoint: _message?.endpoint,
+        message: _message?.message
       });
       const url = `notification.html#sign-payload`;
       this.transactionHandler.openNotification(
@@ -441,5 +447,17 @@ export class L1XMessageHandler {
     } catch (error: any) {
       throw error;
     }
+  }
+
+  async estimateFee<K extends keyof L1XVMTransaction>(
+    transaction: EstimateFeelimitArg<K>,
+    providerAttrib: ProviderAttrib = {
+      clusterType: "mainnet",
+      endpoint: "https://v2-mainnet-rpc.l1x.foundation",
+    }
+  ) {
+    const provider = new L1XProvider(providerAttrib);
+    const estimatedFee = await provider.core.estimateFeelimit(transaction);
+    return estimatedFee;
   }
 }

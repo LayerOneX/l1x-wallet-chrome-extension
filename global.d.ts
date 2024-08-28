@@ -23,6 +23,7 @@ declare global {
     type: VirtualMachineType;
     createdAt: number;
     icon: string;
+    createdFromSeed: boolean;
   }
 
   interface IConnectedSite {
@@ -48,6 +49,7 @@ declare global {
     pendingTransactions: Transaction[];
     connectedSites: IConnectedSite[];
     payloadToSign: ISignRequestProps;
+    isMigrationCompleted: string
   }
 
   interface IApplicationStorage {
@@ -115,8 +117,9 @@ declare global {
     appName: string;
     clusterType: string;
     endpoint: string;
-    payload: string | object;
+    payload: any;
     from: string;
+    message: string;
   }
   interface IVirtualMachine {
     networkType: VirtualMachineType;
@@ -131,7 +134,7 @@ declare global {
     changeActiveNetwork(network: IVMChain): Promise<void>;
     createAccount(accountName: string): Promise<boolean>;
     updateAccountName(account: IXWalletAccount): Promise<void>;
-    importPrivateKey(privateKey: string, accountName: string): Promise<boolean>;
+    importPrivateKey(privateKey: string, accountName: string, createdFromSeed?: boolean): Promise<boolean>;
     importToken(_tokenAddress: string): Promise<boolean>;
     importNFT(
       _collectionAddress: string,
@@ -199,7 +202,7 @@ declare global {
     getEstimateFee(
       providerAttrib?: any,
       transactionAttr?: IFeeEstimateTransaction
-    ): Promise<string>;
+    ): Promise<string | undefined>;
     getCurrentNonce(providerAttrib?: any): Promise<string>;
     signMessage(message: string, providerAttrib?: any): Promise<string>;
     clone(): IVirtualMachine;

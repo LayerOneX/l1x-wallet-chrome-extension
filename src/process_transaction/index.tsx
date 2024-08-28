@@ -32,7 +32,7 @@ const ProcessTransaction = () => {
   useEffect(() => {
     if (transaction) {
       getProvider();
-      getAccountDetails(transaction.from);
+      getAccountDetails(transaction.from, transaction.networkType);
     }
   }, [transaction]);
 
@@ -40,17 +40,17 @@ const ProcessTransaction = () => {
     navigate("/home#Transactions");
   }
 
-  async function getAccountDetails(publicKey: string) {
+  async function getAccountDetails(publicKey: string, networkType: VirtualMachineType) {
     if (!transaction) {
       return;
     }
-    const account = await getAccount(publicKey);
+    const account = await getAccount(publicKey, networkType);
     if (
       account &&
       (transaction?.source == "extension" || account.type == "L1X")
     ) {
       const virtualMachine = VirtualMachineFactory.createVirtualMachine(
-        account.type,
+        transaction.networkType ?? account.type,
         account.publicKey,
         transaction?.chainId
       );

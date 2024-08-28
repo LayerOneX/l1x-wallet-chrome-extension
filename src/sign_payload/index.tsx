@@ -26,6 +26,7 @@ const SignPayload = () => {
   }, []);
 
   useEffect(() => {
+    console.log(data)
     if (data?.url) {
       getAccountDetails();
     }
@@ -71,11 +72,16 @@ const SignPayload = () => {
 
   async function approveRequest() {
     try {
+      debugger;
       setLoader(true);
       if (!account) {
         throw {
           errorMessage: "Account not found.",
         };
+      } else if (typeof data?.payload != 'object') {
+        throw {
+          errorMessage: "Invalid payload. payload should be object."
+        }
       }
       const l1xProvider = new L1XProvider(l1xProviderConfig as any);
       const wallet = await l1xProvider.wallet.importByPrivateKey(Util.removePrefixOx(account.privateKey));
@@ -83,13 +89,13 @@ const SignPayload = () => {
         data?.payload,
         wallet.private_key
       );
-      const signedPayload = await l1xProvider.wallet.toHex(signature);
       Util.closeNotificationWindow(data?.requestId || "", {
         status: "success",
         errorMessage: "",
         data: {
-          signature: signedPayload,
-          publicKey: wallet.public_key
+          ...data?.payload,
+          signature: Array.from(signature),
+          publicKey: Array.from(wallet.public_key_bytes)
         },
       });
     } catch (error: any) {
@@ -135,12 +141,9 @@ const SignPayload = () => {
             Only sign this message if you fully understand the content and trust
             the requesting site.
           </p>
-          <p className="text-xs text-slate-500 mb-3 text-center max-w-[80%] mx-auto">
-            You are signing:
-          </p>
           <div className="flex-col h-[285px] overflow-y-scroll">
             <h5>Message:</h5>
-            <h6>{typeof data?.payload == 'object' ? JSON.stringify(data?.payload) : data?.payload}</h6>
+            <h6>{data?.message}</h6>
           </div>
         </div>
       </div>
