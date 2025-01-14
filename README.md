@@ -1,4 +1,4 @@
-# L1x Wallet
+# x_Wallet
 
 L1x Wallet is a lightweight, secure cryptocurrency wallet, designed for seamless interaction with blockchain networks. It provides APIs for developers to integrate wallet functionalities into their applications, enabling users to manage their digital assets securely and efficiently.
 
