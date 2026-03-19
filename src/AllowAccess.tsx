@@ -6,7 +6,7 @@ import { Tooltip } from "react-tooltip";
 const AllowAccess = () => {
   const [showContractModal, setShowContractModal] = useState<boolean>(false);
   return (
-    <div className="w-[375px] h-[600px] mx-auto overflow-y-auto px-4 py-5 relative flex flex-col">
+    <div className="app-frame mx-auto overflow-y-auto px-4 py-5 relative flex flex-col">
       <div className="w-full text-center mb-3">
         <div className="rounded-full pe-3 ps-2 py-1 border border-slate-300 inline-flex items-center text-xs font-semibold text-slate-500">
           <span className="w-6 h-6 rounded-full me-2">

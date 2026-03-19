@@ -1,4 +1,4 @@
-import { ArrowRight, Copy, Info } from "react-feather";
+import { ArrowRight, Copy } from "react-feather";
 import { Tooltip } from "react-tooltip";
 import { FC, useEffect, useState } from "react";
 import { Util } from "@util/Util";
@@ -6,10 +6,9 @@ import classNames from "classnames";
 import Swal from "sweetalert2";
 import { XCircleIconHtml } from "../../components/XCircleIconHtml";
 import Spinner from "../../components/Spinner";
-import { XCheckCircleIconHtml } from "../../components/XCheckCircleIconHtml";
 import { ProviderAttrib } from "@l1x/l1x-wallet-sdk";
-import Skeleton from "react-loading-skeleton";
 import { removeTransactionRequest } from "@util/Transaction.util";
+import { ethers } from "ethers";
 
 const TransferNativeToken: FC<
   ITransferNativeToken & {
@@ -24,10 +23,25 @@ const TransferNativeToken: FC<
   const [loader, setLoader] = useState(false);
   const [copied, setCopied] = useState(false);
   const [feelimit, setFeelimit] = useState<string>();
+  const [estimatedFee, setEstimatedFee] = useState<string>();
   const [nonce, setNonce] = useState("");
+  const [configError, setConfigError] = useState("");
   const transactionAmount = tokenDetails
     ? +transaction.amount / 10 ** tokenDetails.decimals
     : 0;
+  const tokenSymbol = tokenDetails?.symbol || transaction.symbol || "TOKEN";
+  const [sessionIcon] = useState(() => {
+    const icon = sessionStorage.getItem("reviewTokenIcon");
+    console.log("[TransferNativeToken] sessionStorage reviewTokenIcon:", icon);
+    if (icon) sessionStorage.removeItem("reviewTokenIcon");
+    return icon || "";
+  });
+  const tokenIcon =
+    sessionIcon || tokenDetails?.icon || transaction?.virtualMachine?.activeNetwork?.icon;
+  console.log("[TransferNativeToken] resolved tokenIcon:", tokenIcon, "| sessionIcon:", sessionIcon, "| tokenDetails.icon:", tokenDetails?.icon, "| network.icon:", transaction?.virtualMachine?.activeNetwork?.icon);
+  const usdValue = tokenDetails?.usdRate
+    ? (transactionAmount * tokenDetails.usdRate).toFixed(2)
+    : "0.00";
 
   useEffect(() => {
     fetchNativeTokenDetails();
@@ -45,14 +59,48 @@ const TransferNativeToken: FC<
   }
 
   async function getTransactionConfig() {
-    const nonce = await transaction.virtualMachine.getCurrentNonce(
-      transaction.providerAttrib
-    );
-    const feelimit = await transaction?.virtualMachine.getEstimateFee(
-      transaction.providerAttrib
-    );
-    setFeelimit(transaction.feeLimit ?? feelimit);
-    setNonce(transaction.nonce ?? nonce);
+    try {
+      const nonce = await transaction.virtualMachine.getCurrentNonce(
+        transaction.providerAttrib
+      );
+      const gasLimit = await transaction?.virtualMachine.getEstimateFee(
+        transaction.providerAttrib,
+        {
+          type: "TRASFER",
+          from: transaction.from,
+          to: transaction.to,
+          amount: transaction.amount,
+        }
+      );
+      const resolvedGasLimit = gasLimit || transaction.feeLimit;
+      setFeelimit(resolvedGasLimit);
+      setNonce(transaction.nonce ?? nonce);
+
+      // Compute estimated fee in native token (gasLimit × gasPrice)
+      if (resolvedGasLimit && transaction.virtualMachine.networkType === "EVM") {
+        try {
+          const provider = transaction.virtualMachine.getProvider(
+            transaction.providerAttrib
+          );
+          const feeData = await provider.getFeeData();
+          const gasPrice = feeData.gasPrice ?? feeData.maxFeePerGas;
+          if (gasPrice) {
+            const fee = BigInt(resolvedGasLimit) * gasPrice;
+            setEstimatedFee(ethers.formatEther(fee));
+          }
+        } catch {
+          // Fee display is non-critical
+        }
+      }
+    } catch (error: any) {
+      setConfigError(
+        error?.errorMessage || "Network connection failed. Fee estimation unavailable."
+      );
+      // Still use transaction-provided nonce if available
+      if (transaction.nonce) {
+        setNonce(transaction.nonce);
+      }
+    }
   }
 
   async function fetchNativeTokenDetails() {
@@ -66,7 +114,7 @@ const TransferNativeToken: FC<
       Swal.fire({
         iconHtml: XCircleIconHtml,
         title: "Failed",
-        text: error?.errorMessage ?? "Failed to fetch token details.",
+        text: error?.errorMessage ?? "Failed to fetch token details. Check your network connection.",
         customClass: {
           icon: "no-border",
         },
@@ -104,7 +152,7 @@ const TransferNativeToken: FC<
       nonce
     );
     if (!response?.hash) {
-      throw "Failed to process transaction please try again.";
+      throw { errorMessage: "Failed to process transaction. Please try again." };
     }
     transaction.hash = response?.hash;
 
@@ -127,14 +175,6 @@ const TransferNativeToken: FC<
       if (transaction.onSuccess && typeof transaction.onSuccess == "function") {
         transaction.onSuccess(transaction.hash);
       }
-      Swal.fire({
-        iconHtml: XCheckCircleIconHtml,
-        title: "Success",
-        text: "Transaction completed successfully",
-        customClass: {
-          icon: "no-border",
-        },
-      });
     }
   }
 
@@ -153,7 +193,7 @@ const TransferNativeToken: FC<
           title: "Failed",
           text:
             error?.errorMessage ??
-            "Failed to process transaction please try again.",
+            "Failed to process transaction. Please try again.",
           customClass: {
             icon: "no-border",
           },
@@ -188,225 +228,125 @@ const TransferNativeToken: FC<
   }
 
   return (
-    <div className="w-[375px] h-[600px] mx-auto overflow-y-auto px-4 py-5 relative flex flex-col">
-      <div className="flex-grow-[1]">
-        <div className="text-[10px] font-medium flex items-center justify-center  text-right mb-5 bg-XLightBlue absolute top-0 left-0 w-full px-4 py-1">
-          Transaction Request On&nbsp;
-          {new URL(transaction.rpc).origin ?? ""}
-        </div>
-        <div className="grid grid-cols-2 items-center px-3 py-2  mb-3 rounded-lg bg-XLightBlue relative mt-5">
-          <div className="flex items-center justify-start">
-            <span className="w-6 h-6 overflow-hidden rounded-full me-2">
+    <div className="app-frame mx-auto bg-dark-bg flex flex-col">
+      <div className="px-5 pt-4 pb-2 flex items-center justify-between">
+        <h1 className="text-white text-[16px] font-medium">Review Sending</h1>
+        {/* {origin && (
+          <span className="text-[10px] text-txt-muted">Request from {origin}</span>
+        )} */}
+      </div>
+
+      <div className="flex-1 px-5 overflow-y-auto">
+        <div className="flex flex-col items-center mt-2 mb-6">
+          <div className="w-14 h-14 rounded-full bg-dark-surface border border-dark-border flex items-center justify-center overflow-hidden">
+            {tokenIcon ? (
               <img
-                src={transaction?.virtualMachine.activeNetwork.icon}
-                className="max-w-full object-cover h-6"
+                src={tokenIcon}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  const fallback = transaction?.virtualMachine?.activeNetwork?.icon;
+                  if (fallback && (e.target as HTMLImageElement).src !== fallback) {
+                    (e.target as HTMLImageElement).src = fallback;
+                  }
+                }}
               />
-            </span>
-            <h4 className="text-[10px] font-semibold">
-              {transaction.account.accountName}
-            </h4>
+            ) : (
+              <div className="w-full h-full bg-accent-blue/30" />
+            )}
           </div>
-          <span
-            className="absolute top-2 left-[50%] translate-x-[-50%] text-black
-           bg-white w-6 h-6 inline-flex items-center justify-center rounded-full"
-          >
-            <ArrowRight className="w-4 h-4" />
-          </span>
-          <div className="flex items-center justify-end">
-            <h4 className="text-[10px] font-semibold flex items-center">
-              {Util.wrapPublicKey(transaction?.to)}
+          <h2 className="text-white text-[22px] font-semibold mt-3">
+            {transactionAmount.toLocaleString()} {tokenSymbol}
+          </h2>
+          <p className="text-txt-muted text-[12px]">${usdValue}</p>
+        </div>
+
+        <div className="bg-dark-card border border-dark-border rounded-2xl p-4 space-y-4">
+          <div className="flex items-center justify-between bg-dark-surface rounded-xl px-3 py-3">
+            <div>
+              <p className="text-[10px] text-txt-muted uppercase tracking-wider">
+                Sending From
+              </p>
+              <p className="text-white text-sm font-medium">
+                {transaction.account.accountName}
+              </p>
+            </div>
+            <ArrowRight size={16} className="text-txt-muted" />
+            <div className="text-right">
+              <p className="text-[10px] text-txt-muted uppercase tracking-wider">
+                To Wallet
+              </p>
               <button
-                className="ms-2"
+                className="text-white text-sm font-medium flex items-center gap-1"
                 onClick={() => copyReceiverAddress()}
                 data-tooltip-id="copy-publickey-click"
               >
-                <Copy className="w-4 h-4  text-slate-400" />
+                {Util.wrapPublicKey(transaction.to)}
+                <Copy size={12} className="text-txt-muted" />
               </button>
               {copied && (
                 <Tooltip
-                  className="font-normal !bg-white !text-black shadow-lg !opacity-100 border border-slate-100 !text-[12px]"
+                  className="font-normal !bg-dark-surface !text-white shadow-lg !opacity-100 border border-dark-border !text-[12px]"
                   id="copy-publickey-click"
                   content="Copied!"
                   defaultIsOpen={true}
-                  afterShow={() =>
-                    setTimeout(() => {
-                      setCopied(false);
-                    }, 1000)
-                  }
+                  afterShow={() => setTimeout(() => setCopied(false), 1000)}
                   events={["click"]}
                 />
               )}
-            </h4>
-          </div>
-        </div>
-
-        <h2 className="font-bold text-xs mb-1 flex items-center">
-          You are Sending
-        </h2>
-        {tokenDetailLoader ? (
-          <Skeleton
-            height={57}
-            borderRadius={8}
-            className="mb-2"
-            baseColor="#f1f5f9"
-            highlightColor="#ffffff"
-          />
-        ) : (
-          <div className="bg-slate-100 p-4 rounded-lg mb-3">
-            <div className="w-100 flex items-center mb-2">
-              <span className="w-6 h-6 flex items-center justify-center me-1">
-                <img src={tokenDetails?.icon} className="max-w-full" />
-              </span>
-              <div className="flex items-end">
-                <h3 className="text-xl font-semibold mr-1">
-                  {transactionAmount.toLocaleString()}
-                </h3>
-                <span className="text-sm">{transaction.symbol}</span>
-              </div>
-            </div>
-            <div className="flex items-center justify-between w-full">
-              <p className="text-xs">
-                $
-                {(
-                  transactionAmount * (tokenDetails?.usdRate ?? 0)
-                ).toLocaleString()}
-              </p>
-              <div className="flex items-center ">
-                <div className="flex items-center">
-                  <h4 className="text-xs font-semibold text-slate-800 leading-4 flex text-center mr-2">
-                    Balance: &nbsp;{tokenDetails?.balance?.toLocaleString()}{" "}
-                    {tokenDetails?.symbol}
-                  </h4>
-                  <h6 className="text-xs text-slate-500">
-                    ($
-                    {(
-                      (tokenDetails?.balance ?? 0) *
-                      (tokenDetails?.usdRate ?? 0)
-                    ).toLocaleString()}
-                    )
-                  </h6>
-                </div>
-              </div>
             </div>
           </div>
-        )}
 
-        {/* <h2 className="font-bold text-xs mb-1 flex items-center">Details</h2> */}
-        <div className="bg-slate-100 p-4 rounded-lg mb-3">
-          <h2 className="font-bold text-xs mb-2 flex items-center">
-            Estimated Changes
-            <span
-              className="ms-1 cursor-pointer"
-              data-tooltip-id="estimated-changes-info"
-              data-tooltip-content="Estimated changes are what might happen if you go through with this transaction. This is just a prediction, not a guarantee."
-            >
-              <Info className="w-4 h-4 text-slate-400" />
-              <Tooltip
-                id="estimated-changes-info"
-                className="max-w-40 font-normal !bg-white !text-black shadow-lg !opacity-100 border border-slate-100 !text-[12px]"
-              />
-            </span>
-          </h2>
-          {tokenDetailLoader ? (
-            <Skeleton
-              height={57}
-              borderRadius={8}
-              className="mb-2"
-              baseColor="#f1f5f9"
-              highlightColor="#ffffff"
-            />
-          ) : (
+          <div className="space-y-2 text-[11px]">
             <div className="flex items-center justify-between">
-              <h4 className="font-medium text-xs mb-1 flex items-center text-slate-500">
-                You Send :
-              </h4>
-              <div className="">
-                <div className="flex gap-3 items-center justify-end">
-                  <div className="bg-red-500/10 text-xs px-3 py-1 rounded-full font-semibold text-red-500 text-center">
-                    -{transactionAmount}
-                  </div>
-                  <div className="bg-white text-xs ps-2 pe-4 py-1 rounded-full font-semibold text-slate-600 text-center flex items-center justify-center">
-                    <span className="w-4 h-4 flex items-center justify-center me-1">
-                      <img src={tokenDetails?.icon} className="max-w-full" />
-                    </span>{" "}
-                    {tokenDetails?.symbol}
-                  </div>
-                </div>
-              </div>
+              <span className="text-txt-muted">Network</span>
+              <span className="text-white">
+                {transaction?.virtualMachine?.activeNetwork?.name || "Network"}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-txt-muted">Interacting with</span>
+              <span className="text-white">{tokenSymbol}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-txt-muted">Estimated Fee</span>
+              <span className="text-white">
+                {estimatedFee
+                  ? `~${parseFloat(estimatedFee).toFixed(6)} ${transaction?.virtualMachine?.activeNetwork?.nativeToken?.symbol || "ETH"}`
+                  : feelimit
+                    ? "Estimating..."
+                    : "—"}
+              </span>
+            </div>
+          </div>
+
+          {configError && (
+            <div className="mt-3 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
+              <p className="text-amber-400 text-[11px]">{configError}</p>
             </div>
           )}
         </div>
-
-        {/* {feelimit || nonce ? (
-          <div className="bg-slate-100 p-4 rounded-lg">
-            <div className="flex items-start justify-between mb-2">
-              <h2 className="font-bold text-xs  flex items-center">
-                Estimated Fees
-              </h2>
-            </div>
-            <div className="grid grid-cols-3 bg-white rounded-md items-center p-1 mb-3">
-              <label className="text-sm pl-3 flex align-middle">
-                Nonce
-                <Info
-                  className="w-4 h-4 text-slate-400 cursor-pointer ms-1"
-                  data-tooltip-id="estimated-changes-info"
-                  data-tooltip-content="Current nonce for the transaction. Update only if necessary."
-                />
-                <Tooltip
-                  id="estimated-changes-info"
-                  className="max-w-40 font-normal !bg-white !text-black shadow-lg !opacity-100 border border-slate-100 !text-[12px]"
-                />
-              </label>
-              <input
-                className="w-full py-2 px-4 border border-gray-300 rounded-md col-span-2 text-sm font-medium"
-                placeholder=""
-                value={nonce}
-                readOnly
-              />
-            </div>
-            <div className="grid grid-cols-3 bg-white rounded-md items-center p-1 mb-3">
-              <label className="text-sm pl-3 flex align-middle">
-                Fee Limit{" "}
-                <Info
-                  className="w-4 h-4 text-slate-400 cursor-pointer ms-1"
-                  data-tooltip-id="estimated-changes-info"
-                  data-tooltip-content="Maximum fee amount for the transaction. (Amount is in decimal format)"
-                />
-                <Tooltip
-                  id="estimated-changes-info"
-                  className="max-w-40 font-normal !bg-white !text-black shadow-lg !opacity-100 border border-slate-100 !text-[12px]"
-                />
-              </label>
-              <input
-                className="w-full py-2 px-4 border border-gray-300 rounded-md col-span-2 text-sm font-medium"
-                placeholder=""
-                value={feelimit}
-                readOnly
-              />
-            </div>
-          </div>
-        ) : (
-          ""
-        )} */}
       </div>
-      <div className="grid grid-cols-2 gap-3 mt-5">
+
+      <div className="px-5 pb-5 grid grid-cols-2 gap-3">
         <button
-          className="flex items-center justify-center text-sm text-XOrange hover:text-white border border-XOrange hover:bg-XOrange  bg-transparent px-3 py-2 rounded-3xl w-full min-h-[40px]"
+          className="py-3 rounded-xl text-sm font-medium bg-dark-card border border-dark-border text-white hover:bg-dark-surface"
           type="button"
           onClick={rejectTransaction}
           disabled={loader || tokenDetailLoader}
         >
-          Reject
+          Cancel
         </button>
         <button
           className={classNames(
-            loader ? "bg-XOrange/70 pointer-event-none" : "bg-XOrange",
-            "flex items-center justify-center text-sm text-white px-3 py-2 rounded-3xl w-full min-h-[40px] hover:bg-XBlue"
+            loader || tokenDetailLoader || (!!configError && !nonce)
+              ? "bg-white/60 text-dark-bg cursor-not-allowed"
+              : "bg-white text-dark-bg hover:bg-gray-100",
+            "py-3 rounded-xl text-sm font-semibold flex items-center justify-center"
           )}
-          disabled={loader || tokenDetailLoader}
+          disabled={loader || tokenDetailLoader || (!!configError && !nonce)}
           onClick={confirmTransaction}
         >
-          {loader ? <Spinner /> : "Confirm"}
+          {loader ? <Spinner /> : "Continue"}
         </button>
       </div>
     </div>

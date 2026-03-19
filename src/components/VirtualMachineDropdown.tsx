@@ -31,8 +31,8 @@ const VirtualMachineDropdown: FC<IWalletListDropdownProps> = (props) => {
       <Listbox value={selectedVMType} onChange={setSelectedVMType}>
         {({ open }) => (
           <>
-            <div className="relative mt-2">
-              <ListboxButton className="w-full px-4 py-3 bg-white  border border-slate-300 rounded-md outline-none text-sm">
+            <div className="relative mt-0">
+              <ListboxButton className="w-full px-4 py-3 bg-dark-card border border-dark-border rounded-xl outline-none text-sm text-white">
                 <span className="flex items-center">
                   <img
                     src={selectedVMType.icon}
@@ -45,7 +45,7 @@ const VirtualMachineDropdown: FC<IWalletListDropdownProps> = (props) => {
                 </span>
                 <span className="pointer-events-none absolute inset-y-0 right-0 ml-3 flex items-center pr-2">
                   <ChevronDown
-                    className="h-5 w-5 text-gray-400"
+                    className="h-5 w-5 text-txt-muted"
                     aria-hidden="true"
                   />
                 </span>
@@ -57,15 +57,14 @@ const VirtualMachineDropdown: FC<IWalletListDropdownProps> = (props) => {
                 leaveFrom="opacity-100"
                 leaveTo="opacity-0"
               >
-                <ListboxOptions className="absolute z-10 mt-1 max-h-56 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
+                <ListboxOptions className="absolute z-10 mt-2 max-h-56 w-full overflow-auto rounded-xl bg-dark-card border border-dark-border py-1 text-base shadow-lg focus:outline-none sm:text-sm">
                   {Config.virtualMachinesLists.map((vm) => (
                     <ListboxOption
                       key={vm.id}
                       className={({ focus }) =>
                         classNames(
-                          focus ? "bg-slate-100" : "",
-                          !focus ? "text-gray-900" : "",
-                          "relative cursor-default select-none py-2 pl-3 pr-9 text-sm"
+                          focus ? "bg-dark-surface" : "",
+                          "relative cursor-default select-none py-2 pl-3 pr-9 text-sm text-white"
                         )
                       }
                       value={vm}

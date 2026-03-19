@@ -8,6 +8,7 @@ declare global {
   };
   interface Window {
     L1X: XWalletAPI;
+    ethereum: any;
   }
 
   interface IVirtualMachineItem {
@@ -49,7 +50,18 @@ declare global {
     pendingTransactions: Transaction[];
     connectedSites: IConnectedSite[];
     payloadToSign: ISignRequestProps;
-    isMigrationCompleted: string
+    evmSignRequest: any;
+    isMigrationCompleted: string;
+    isMigrationCompleted: string;
+    hiddenWallets: string[];
+    internalChecksum: string[],
+    userThemePreferances: any,
+    chainState: any;
+    userTheme: any;
+    light: string;
+    l1xToEvmMigrationDone: string;
+    customNetworks: IVMChain[];
+    networkRpcOverrides: Record<number, { rpc: string; exploreruri: string }>;
   }
 
   interface IApplicationStorage {
@@ -196,6 +208,7 @@ declare global {
     addTransaction(transaction: Transaction, rpc?: string): Promise<boolean>;
     removePendingTransaction(id: string): Promise<boolean>;
     listTransactions(): Promise<Transaction[]>;
+    listAllTransactions(publicKeys?: string[]): Promise<Transaction[]>;
     getTransactionReceipt(
       hash: string
     ): Promise<TransactionReceipt | GetTransactionReceiptResponse>;
@@ -208,4 +221,4 @@ declare global {
     clone(): IVirtualMachine;
   }
 }
-export {};
+export { };

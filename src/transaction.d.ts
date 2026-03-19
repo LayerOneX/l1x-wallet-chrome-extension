@@ -8,7 +8,8 @@ interface ITransaction {
     | "transfer-nft"
     | "state-change-call"
     | "init-contract"
-    | "sign-tx-payload";
+    | "sign-tx-payload"
+    | "evm-dapp-transaction";
   site?: string;
   siteFavIcon?: string;
   hash?: string;
@@ -19,6 +20,7 @@ interface ITransaction {
   from: string;
   chainId: string;
   rpc: string;
+  txStatus?: "pending" | "confirmed" | "failed";
 }
 
 interface ITransferNativeToken extends ITransaction {
@@ -26,6 +28,7 @@ interface ITransferNativeToken extends ITransaction {
   to: string;
   amount: string;
   symbol: string;
+  decimals?: number;
   responseType?: "SIGNATURE";
 }
 
@@ -35,6 +38,7 @@ interface ITransferToken extends ITransaction {
   amount: string;
   tokenAddress: string;
   symbol?: string;
+  decimals?: number;
 }
 
 interface ITransferNFT extends ITransaction {
@@ -58,9 +62,24 @@ interface IInitContract extends ITransaction {
   arguments: any;
 }
 
+interface IEVMDappTransaction extends ITransaction {
+  type: "evm-dapp-transaction";
+  to: string;
+  value: string;
+  data: string;
+  gas?: string;
+  gasPrice?: string;
+  maxFeePerGas?: string;
+  maxPriorityFeePerGas?: string;
+  chainId: string;
+  rpcUrl: string;
+  sdkRequestId?: string;
+}
+
 type Transaction =
   | IStateChangeCall
   | ITransferNFT
   | ITransferToken
   | ITransferNativeToken
-  | IInitContract;
+  | IInitContract
+  | IEVMDappTransaction;

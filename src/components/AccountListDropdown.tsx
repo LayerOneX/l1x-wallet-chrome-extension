@@ -34,19 +34,28 @@ const AccountListDropdown = () => {
     const storage = await ExtensionStorage.get("wallets");
     if (storage) {
       const { ACTIVE, ...wallets } = storage;
-      setWallets(Object.values(wallets).flat());
-      setActiveWallet(ACTIVE);
+      const allWallets = Object.values(wallets).flat();
+      const hidden = (await ExtensionStorage.get("hiddenWallets")) || [];
+      const visible = allWallets.filter(
+        (wallet) => !hidden.includes(wallet.publicKey)
+      );
+      setWallets(visible);
+      if (ACTIVE && !hidden.includes(ACTIVE.publicKey)) {
+        setActiveWallet(ACTIVE);
+      } else {
+        setActiveWallet(visible[0] || null);
+      }
     }
   }
 
   return (
-    <div className="w-full relative bg-XLightBlue p-4 rounded-lg mb-4">
+    <div className="w-full relative bg-dark-card border border-dark-border p-4 rounded-xl mb-4">
       <div className="mb-3 relative">
         <Listbox value={activeWallet} onChange={setActiveWallet}>
           {({ open }) => (
             <>
               <div className="relative mt-2">
-                <ListboxButton className="w-full px-4 py-3 bg-white  border border-slate-300 rounded-md outline-none text-sm">
+                <ListboxButton className="w-full px-4 py-3 bg-dark-surface border border-dark-border rounded-xl outline-none text-sm text-white">
                   <span className="flex items-center">
                     <img
                       src={activeWallet?.icon}
@@ -59,7 +68,7 @@ const AccountListDropdown = () => {
                   </span>
                   <span className="pointer-events-none absolute inset-y-0 right-0 ml-3 flex items-center pr-2">
                     <ChevronDown
-                      className="h-5 w-5 text-gray-400"
+                      className="h-5 w-5 text-txt-muted"
                       aria-hidden="true"
                     />
                   </span>
@@ -71,15 +80,14 @@ const AccountListDropdown = () => {
                   leaveFrom="opacity-100"
                   leaveTo="opacity-0"
                 >
-                  <ListboxOptions className="absolute z-10 mt-1 max-h-56 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
+                  <ListboxOptions className="absolute z-10 mt-1 max-h-56 w-full overflow-auto rounded-xl bg-dark-surface border border-dark-border py-1 text-base shadow-lg focus:outline-none sm:text-sm">
                     {wallets.map((wallet) => (
                       <ListboxOption
                         key={wallet.publicKey}
                         className={({ focus }) =>
                           classNames(
-                            focus ? "bg-slate-100" : "",
-                            !focus ? "text-gray-900" : "",
-                            "relative cursor-default select-none py-2 pl-3 pr-9 text-sm"
+                            focus ? "bg-dark-card" : "",
+                            "relative cursor-default select-none py-2 pl-3 pr-9 text-sm text-white"
                           )
                         }
                         value={wallet}
@@ -103,14 +111,7 @@ const AccountListDropdown = () => {
                         </div>
 
                         {activeWallet?.publicKey == wallet.publicKey && (
-                          <span
-                            className={classNames(
-                              activeWallet?.publicKey == wallet.publicKey
-                                ? "text-XOrange"
-                                : "text-XOrange",
-                              "absolute inset-y-0 right-0 flex items-center pr-4"
-                            )}
-                          >
+                          <span className="absolute inset-y-0 right-0 flex items-center pr-4 text-XOrange">
                             <CheckIcon className="h-5 w-5" aria-hidden="true" />
                           </span>
                         )}
@@ -124,11 +125,11 @@ const AccountListDropdown = () => {
         </Listbox>
       </div>
       <div className="flex align-middle">
-        <h6 className="text-xs mb-1 font-semibold ps-2">
+        <h6 className="text-xs mb-1 font-semibold ps-2 text-txt-secondary">
           {appContext?.virtualMachine.activeNetwork.name}
         </h6>
       </div>
-      <div className="bg-white p-2 rounded-full w-full h-10 flex items-center gap-1">
+      <div className="bg-dark-surface border border-dark-border p-2 rounded-full w-full h-10 flex items-center gap-1">
         <NetworkChains />
       </div>
     </div>

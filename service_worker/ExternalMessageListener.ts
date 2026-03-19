@@ -4,21 +4,23 @@ import { ExternalMessageAction } from "./Actions.type";
 import { IExternalMessage, IServiceWorkerResponse } from "./index.interface";
 import { TransactionHandler } from "./TransactionHandler";
 import { L1XMessageHandler } from "./L1XMessageHandler";
+import { EVMMessageHandler } from "./EVMMessageHandler";
 import { accountConnected } from "@util/Account.util";
 import { Config } from "@util/Config.util";
 
 export class ExternalMessageListener {
+  // Methods callable without prior connection (pre-auth actions only)
   #allowedMethods: ExternalMessageAction[] = [
     ExternalMessageAction.CONNECT,
     ExternalMessageAction.IS_CONNECTED,
-    ExternalMessageAction.DISCONNECT,
-    ExternalMessageAction.SIGN_MESSAGE,
-    ExternalMessageAction.LIST_ACCOUNTS,
+    ExternalMessageAction.EVM_RPC,
   ];
   #l1XMessageHandler: L1XMessageHandler;
+  #evmMessageHandler: EVMMessageHandler;
 
   constructor(protected transactionHandler: TransactionHandler) {
     this.#l1XMessageHandler = new L1XMessageHandler(transactionHandler);
+    this.#evmMessageHandler = new EVMMessageHandler(transactionHandler);
   }
 
   async #isConnected(
@@ -52,13 +54,33 @@ export class ExternalMessageListener {
     }
   }
 
-  #connect(
+  async #connect(
     _message: any,
     _sender: chrome.runtime.MessageSender,
     _sendResponse: (response: IServiceWorkerResponse) => void
   ) {
     try {
-      const requestId = Date.now();
+      const connectedSites =
+        (await ExtensionStorage.get("connectedSites")) ?? [];
+      const isConnected =
+        connectedSites?.findIndex(
+          (site) =>
+            site.url &&
+            site.url === _sender.origin &&
+            site?.accounts?.length > 0
+        ) >= 0;
+
+      if (isConnected) {
+        return _sendResponse({
+          status: "success",
+          errorMessage: "",
+          data: {
+            isConnected: true,
+          },
+        });
+      }
+
+      const requestId = crypto.randomUUID();
       const url = `notification.html#connect?data=${encodeURIComponent(
         JSON.stringify({
           url: _sender.origin,
@@ -71,7 +93,7 @@ export class ExternalMessageListener {
       )}`;
       this.transactionHandler.openNotification(
         url,
-        requestId as any,
+        requestId,
         _sendResponse
       );
     } catch (error: any) {
@@ -83,6 +105,7 @@ export class ExternalMessageListener {
       });
     }
   }
+
 
   async #listConnectedAccounts(
     _message: any,
@@ -164,231 +187,277 @@ export class ExternalMessageListener {
 
   protected listenExternalMessages() {
     chrome.runtime.onMessageExternal.addListener(
-      async (
+      (
         _message: IExternalMessage,
         _sender,
         _sendResponse: (response: IServiceWorkerResponse) => void
       ) => {
-        const connection = await this.auth(
-          _message.action,
-          _sender,
-          _sendResponse
-        );
-        if (!connection.allowed) {
-          return _sendResponse({
-            status: "failure",
-            errorMessage: "Site is not connected. Please try after connection.",
-            data: null,
-          });
-        }
-        switch (_message.action) {
-          case ExternalMessageAction.IS_CONNECTED:
-            this.#isConnected(_message.data, _sender, _sendResponse);
-            break;
-
-          case ExternalMessageAction.CONNECT:
-            this.#connect(_message.data, _sender, _sendResponse);
-            break;
-
-          case ExternalMessageAction.SEND_TRANSACTION:
-            if (
-              !(await accountConnected(
-                _message.data.from,
-                _sender.origin ?? ""
-              ))
-            ) {
-              return _sendResponse({
-                status: "failure",
-                errorMessage: "Invalid sender address.",
-                data: null,
-              });
-            }
-            this.#l1XMessageHandler.sendTransaction(
-              _message.data,
-              _sender,
-              _sendResponse,
-              connection.l1xProviderConfig?.endpoint ?? Config.rpc.l1x
-            );
-            break;
-
-          case ExternalMessageAction.INIT_CONTRACT:
-            if (
-              !(await accountConnected(
-                _message.data.from,
-                _sender.origin ?? ""
-              ))
-            ) {
-              return _sendResponse({
-                status: "failure",
-                errorMessage: "Invalid sender address.",
-                data: null,
-              });
-            }
-            this.#l1XMessageHandler.initContract(
-              _message.data,
-              _sender,
-              _sendResponse,
-              connection.l1xProviderConfig?.endpoint ?? Config.rpc.l1x
-            );
-            break;
-
-          case ExternalMessageAction.LIST_ACCOUNTS:
-            this.#listConnectedAccounts(_message.data, _sender, _sendResponse);
-            break;
-
-          case ExternalMessageAction.CALL_REQUEST:
-            this.#l1XMessageHandler.makeRequestCall(
-              _message.data,
-              _sender,
-              _sendResponse,
-              connection.l1xProviderConfig as any
-            );
-            break;
-
-          case ExternalMessageAction.DISCONNECT:
-            this.#handleDisconnect(_message.data, _sender, _sendResponse);
-            break;
-
-          case ExternalMessageAction.TRANSFER_NATIVE_TOKEN:
-            if (
-              !(await accountConnected(
-                _message.data.from,
-                _sender.origin ?? ""
-              ))
-            ) {
-              return _sendResponse({
-                status: "failure",
-                errorMessage: "Invalid sender address.",
-                data: null,
-              });
-            }
-            this.#l1XMessageHandler.transferNativeToken(
-              _message.data,
-              _sender,
-              _sendResponse,
-              connection.l1xProviderConfig?.endpoint ?? Config.rpc.l1x
-            );
-            break;
-
-          case ExternalMessageAction.TRANSFER_TOKEN:
-            if (
-              !(await accountConnected(
-                _message.data.from,
-                _sender.origin ?? ""
-              ))
-            ) {
-              return _sendResponse({
-                status: "failure",
-                errorMessage: "Invalid sender address.",
-                data: null,
-              });
-            }
-            this.#l1XMessageHandler.transferTokens(
-              _message.data,
-              _sender,
-              _sendResponse,
-              connection.l1xProviderConfig?.endpoint ?? Config.rpc.l1x
-            );
-            break;
-
-          case ExternalMessageAction.TRANSFER_NFT:
-            if (
-              !(await accountConnected(
-                _message.data.from,
-                _sender.origin ?? ""
-              ))
-            ) {
-              return _sendResponse({
-                status: "failure",
-                errorMessage: "Invalid sender address.",
-                data: null,
-              });
-            }
-            this.#l1XMessageHandler.transferNFT(
-              _message.data,
-              _sender,
-              _sendResponse,
-              connection.l1xProviderConfig?.endpoint ?? Config.rpc.l1x
-            );
-            break;
-
-          case ExternalMessageAction.SIGN_MESSAGE:
-            this.#l1XMessageHandler.signMessage(
-              _message.data,
-              _sender,
-              _sendResponse
-            );
-            break;
-
-          case ExternalMessageAction.SIGN_PAYLOAD:
-            if (
-              !(await accountConnected(
-                _message.data.from,
-                _sender.origin ?? ""
-              ))
-            ) {
-              return _sendResponse({
-                status: "failure",
-                errorMessage: "Invalid sender address.",
-                data: null,
-              });
-            }
-            this.#l1XMessageHandler.signPayload(
-              _message.data,
-              _sender,
-              _sendResponse
-            );
-            break;
-
-          case ExternalMessageAction.GET_L1X_PROVIDER_CONFIG:
-            return _sendResponse({
-              status: "success",
-              errorMessage: "",
-              data: connection.l1xProviderConfig,
-            });
-
-          case ExternalMessageAction.SET_L1X_PROVIDER_CONFIG:
-            this.#l1XMessageHandler.setL1XProvider(
-              _message.data,
-              _sender,
-              _sendResponse
-            );
-            break;
-
-          case ExternalMessageAction.ACCOUNT_STATE:
-            if (
-              !(await accountConnected(
-                _message.data.from,
-                _sender.origin ?? ""
-              ))
-            ) {
-              return _sendResponse({
-                status: "failure",
-                errorMessage: "Invalid sender address.",
-                data: null,
-              });
-            }
-            const accountState = await this.#l1XMessageHandler.getAccountState(
-              _message.data.from,
-              connection.l1xProviderConfig as any
-            );
-            return _sendResponse({
-              status: "success",
-              errorMessage: "",
-              data: accountState,
-            });
-
-          default:
-            _sendResponse({
-              status: "failure",
-              errorMessage: `Invalid action ${_message.action}.`,
-              data: null,
-            });
-            break;
-        }
-
+        this.handleExternalMessage(_message, _sender, _sendResponse);
         return true;
       }
     );
+  }
+
+  private async handleExternalMessage(
+    _message: IExternalMessage,
+    _sender: chrome.runtime.MessageSender,
+    _sendResponse: (response: IServiceWorkerResponse) => void
+  ) {
+    try {
+      console.log("[ExternalMsg] Received:", _message.action, "from:", _sender.origin);
+      const connection = await this.auth(
+        _message.action,
+        _sender,
+        _sendResponse
+      );
+
+      if (!connection.allowed) {
+        return _sendResponse({
+          status: "failure",
+          errorMessage: "Site is not connected. Please try after connection.",
+          data: null,
+        });
+      }
+
+      switch (_message.action) {
+        case ExternalMessageAction.IS_CONNECTED:
+          this.#isConnected(_message.data, _sender, _sendResponse);
+          break;
+
+        case ExternalMessageAction.CONNECT:
+          this.#connect(_message.data, _sender, _sendResponse);
+          break;
+
+        case ExternalMessageAction.SEND_TRANSACTION:
+          if (
+            !(await accountConnected(
+              _message.data.from,
+              _sender.origin ?? ""
+            ))
+          ) {
+            return _sendResponse({
+              status: "failure",
+              errorMessage: "Invalid sender address.",
+              data: null,
+            });
+          }
+          this.#l1XMessageHandler.sendTransaction(
+            _message.data,
+            _sender,
+            _sendResponse,
+            connection.l1xProviderConfig?.endpoint ?? Config.rpc.l1x
+          );
+          break;
+
+        case ExternalMessageAction.INIT_CONTRACT:
+          if (
+            !(await accountConnected(
+              _message.data.from,
+              _sender.origin ?? ""
+            ))
+          ) {
+            return _sendResponse({
+              status: "failure",
+              errorMessage: "Invalid sender address.",
+              data: null,
+            });
+          }
+          this.#l1XMessageHandler.initContract(
+            _message.data,
+            _sender,
+            _sendResponse,
+            connection.l1xProviderConfig?.endpoint ?? Config.rpc.l1x
+          );
+          break;
+
+        case ExternalMessageAction.LIST_ACCOUNTS:
+          this.#listConnectedAccounts(_message.data, _sender, _sendResponse);
+          break;
+
+        case ExternalMessageAction.CALL_REQUEST:
+          this.#l1XMessageHandler.makeRequestCall(
+            _message.data,
+            _sender,
+            _sendResponse,
+            connection.l1xProviderConfig as any
+          );
+          break;
+
+        case ExternalMessageAction.DISCONNECT:
+          this.#handleDisconnect(_message.data, _sender, _sendResponse);
+          break;
+
+        case ExternalMessageAction.TRANSFER_NATIVE_TOKEN:
+          if (
+            !(await accountConnected(
+              _message.data.from,
+              _sender.origin ?? ""
+            ))
+          ) {
+            return _sendResponse({
+              status: "failure",
+              errorMessage: "Invalid sender address.",
+              data: null,
+            });
+          }
+          this.#l1XMessageHandler.transferNativeToken(
+            _message.data,
+            _sender,
+            _sendResponse,
+            connection.l1xProviderConfig?.endpoint ?? Config.rpc.l1x
+          );
+          break;
+
+        case ExternalMessageAction.TRANSFER_TOKEN:
+          if (
+            !(await accountConnected(
+              _message.data.from,
+              _sender.origin ?? ""
+            ))
+          ) {
+            return _sendResponse({
+              status: "failure",
+              errorMessage: "Invalid sender address.",
+              data: null,
+            });
+          }
+          this.#l1XMessageHandler.transferTokens(
+            _message.data,
+            _sender,
+            _sendResponse,
+            connection.l1xProviderConfig?.endpoint ?? Config.rpc.l1x
+          );
+          break;
+
+        case ExternalMessageAction.TRANSFER_NFT:
+          if (
+            !(await accountConnected(
+              _message.data.from,
+              _sender.origin ?? ""
+            ))
+          ) {
+            return _sendResponse({
+              status: "failure",
+              errorMessage: "Invalid sender address.",
+              data: null,
+            });
+          }
+          this.#l1XMessageHandler.transferNFT(
+            _message.data,
+            _sender,
+            _sendResponse,
+            connection.l1xProviderConfig?.endpoint ?? Config.rpc.l1x
+          );
+          break;
+
+        case ExternalMessageAction.SIGN_MESSAGE:
+          if (
+            _message.data?.from &&
+            !(await accountConnected(
+              _message.data.from,
+              _sender.origin ?? ""
+            ))
+          ) {
+            return _sendResponse({
+              status: "failure",
+              errorMessage: "Invalid sender address.",
+              data: null,
+            });
+          }
+          this.#l1XMessageHandler.signMessage(
+            _message.data,
+            _sender,
+            _sendResponse
+          );
+          break;
+
+        case ExternalMessageAction.SIGN_PAYLOAD:
+          if (
+            !(await accountConnected(
+              _message.data.from,
+              _sender.origin ?? ""
+            ))
+          ) {
+            return _sendResponse({
+              status: "failure",
+              errorMessage: "Invalid sender address.",
+              data: null,
+            });
+          }
+          this.#l1XMessageHandler.signPayload(
+            _message.data,
+            _sender,
+            _sendResponse
+          );
+          break;
+
+        case ExternalMessageAction.GET_L1X_PROVIDER_CONFIG:
+          return _sendResponse({
+            status: "success",
+            errorMessage: "",
+            data: connection.l1xProviderConfig,
+          });
+
+        case ExternalMessageAction.SET_L1X_PROVIDER_CONFIG:
+          this.#l1XMessageHandler.setL1XProvider(
+            _message.data,
+            _sender,
+            _sendResponse
+          );
+          break;
+
+        case ExternalMessageAction.ACCOUNT_STATE:
+          if (
+            !(await accountConnected(
+              _message.data.from,
+              _sender.origin ?? ""
+            ))
+          ) {
+            return _sendResponse({
+              status: "failure",
+              errorMessage: "Invalid sender address.",
+              data: null,
+            });
+          }
+          const accountState = await this.#l1XMessageHandler.getAccountState(
+            _message.data.from,
+            connection.l1xProviderConfig as any
+          );
+          return _sendResponse({
+            status: "success",
+            errorMessage: "",
+            data: accountState,
+          });
+
+        case ExternalMessageAction.EVM_RPC:
+          console.log("[ExternalMsg] EVM_RPC received, method:", _message.data?.method, "requestId:", _message.requestId);
+          this.#evmMessageHandler.handleRpc(
+            _message.data,
+            _sender,
+            _sendResponse,
+            _message.requestId
+          );
+          break;
+
+        case ExternalMessageAction.EVM_DISCONNECT:
+          this.#handleDisconnect(_message.data, _sender, _sendResponse);
+          break;
+
+        default:
+          _sendResponse({
+            status: "failure",
+            errorMessage: `Invalid action ${_message.action}.`,
+            data: null,
+          });
+          break;
+      }
+    } catch (error: any) {
+      Logger.error(error);
+      _sendResponse({
+        status: "failure",
+        errorMessage: error?.message || "Internal error in service worker",
+        data: null,
+      });
+    }
   }
 }

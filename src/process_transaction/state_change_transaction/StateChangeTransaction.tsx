@@ -31,6 +31,7 @@ const StateChangeTransaction: FC<
     transaction.feeLimit
   );
   const [nonce, setNonce] = useState<string>();
+  const [configError, setConfigError] = useState("");
 
   useEffect(() => {
     getTransactionConfig();
@@ -47,14 +48,23 @@ const StateChangeTransaction: FC<
   }
 
   async function getTransactionConfig() {
-    const nonce = await transaction.virtualMachine.getCurrentNonce(
-      transaction.providerAttrib
-    );
-    const feelimit = await transaction?.virtualMachine.getEstimateFee(
-      transaction.providerAttrib
-    );
-    setFeelimit(transaction.feeLimit ?? feelimit ?? undefined);
-    setNonce(transaction.nonce || nonce || undefined);
+    try {
+      const nonce = await transaction.virtualMachine.getCurrentNonce(
+        transaction.providerAttrib
+      );
+      const feelimit = await transaction?.virtualMachine.getEstimateFee(
+        transaction.providerAttrib
+      );
+      setFeelimit(feelimit || transaction.feeLimit || undefined);
+      setNonce(transaction.nonce || nonce || undefined);
+    } catch (error: any) {
+      setConfigError(
+        error?.errorMessage || "Network connection failed. Fee estimation unavailable."
+      );
+      if (transaction.nonce) {
+        setNonce(transaction.nonce);
+      }
+    }
   }
 
   function copyReceiverAddress() {
@@ -63,15 +73,20 @@ const StateChangeTransaction: FC<
   }
 
   async function validateTransaction(hash: string) {
-    await new Promise((resolve) => {
-      setTimeout(resolve, 5000);
-    });
-    const receipt = await l1xProvider.core.getTransactionReceipt({ hash });
-    return (
-      typeof receipt.status != "undefined" &&
-      !isNaN(receipt.status as any) &&
-      +receipt.status == 0
-    );
+    try {
+      await new Promise((resolve) => {
+        setTimeout(resolve, 5000);
+      });
+      const receipt = await l1xProvider.core.getTransactionReceipt({ hash });
+      return (
+        typeof receipt.status != "undefined" &&
+        !isNaN(receipt.status as any) &&
+        +receipt.status == 0
+      );
+    } catch {
+      // RPC failure during validation — treat as unconfirmed rather than crashing
+      return false;
+    }
   }
 
   async function sendTransaction() {
@@ -89,7 +104,7 @@ const StateChangeTransaction: FC<
         nonce: nonce && !isNaN(nonce as any) ? +nonce : undefined,
       };
       const response = await l1xProvider.vm.makeStateChangingFunctionCall(data);
-      if (!validateTransaction(response.hash)) {
+      if (!(await validateTransaction(response.hash))) {
         throw new Error("Failed to process transaction. Please try again.");
       }
       const newTransaction: IStateChangeCall = {
@@ -133,7 +148,7 @@ const StateChangeTransaction: FC<
   }
 
   return (
-    <div className="w-[375px] h-[600px] mx-auto overflow-y-auto px-4 py-5 relative flex flex-col">
+    <div className="app-frame mx-auto overflow-y-auto px-4 py-5 relative flex flex-col">
       <div className="flex-grow-[1]">
         <div className="text-[10px] font-medium flex items-center justify-center  text-right mb-5 bg-XLightBlue absolute top-0 left-0 w-full px-4 py-1">
           Transaction Request On&nbsp;
@@ -224,6 +239,12 @@ const StateChangeTransaction: FC<
           </h4>
         </div>
         {/* End of estimate changes */}
+
+        {configError && (
+          <div className="mt-3 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
+            <p className="text-amber-400 text-[11px]">{configError}</p>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-3 mt-5">
@@ -237,10 +258,10 @@ const StateChangeTransaction: FC<
         </button>
         <button
           className={classNames(
-            loader ? "bg-XOrange/70 pointer-event-none" : "bg-XOrange",
+            loader || (!!configError && !nonce) ? "bg-XOrange/70 pointer-event-none" : "bg-XOrange",
             "flex items-center justify-center text-sm text-white px-3 py-2 rounded-3xl w-full min-h-[40px]"
           )}
-          disabled={loader}
+          disabled={loader || (!!configError && !nonce)}
           onClick={sendTransaction}
         >
           {loader ? <Spinner /> : "Confirm"}

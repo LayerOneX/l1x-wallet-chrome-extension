@@ -36,8 +36,11 @@ const ProcessTransaction = () => {
     }
   }, [transaction]);
 
-  function handleTransactionSuccess() {
-    navigate("/home#Transactions");
+  function handleTransactionSuccess(hash?: string) {
+    // Clean up send-flow sessionStorage now that the transaction is complete
+    sessionStorage.removeItem("sendTokenData");
+    sessionStorage.removeItem("reviewTokenIcon");
+    navigate("/home#Activity", { state: { newTxHash: hash } });
   }
 
   async function getAccountDetails(publicKey: string, networkType: VirtualMachineType) {
@@ -82,7 +85,7 @@ const ProcessTransaction = () => {
       Swal.fire({
         iconHtml: XCircleIconHtml,
         title: "Failed",
-        text: error.errorMessage ?? "Failed to verify login.",
+        text: error.errorMessage ?? "Failed to load pending transactions. Please try again.",
         customClass: {
           icon: "no-border",
         },
@@ -120,7 +123,7 @@ const ProcessTransaction = () => {
   return transaction?.source == "dapp" && account?.type != "L1X" ? (
     <ChangeNetworkRequest requestId={transaction.requestId} />
   ) : !account || !virtualMachine ? (
-    <div className="w-[375px] h-[600px] mx-auto overflow-y-auto px-4 py-5 relative flex flex-col justify-center align-middle items-center">
+    <div className="app-frame mx-auto overflow-y-auto px-4 py-5 relative flex flex-col justify-center align-middle items-center">
       <img src={warningImg} alt="img" />
       <div>Something went wrong!</div>
       <button
@@ -171,7 +174,7 @@ const ProcessTransaction = () => {
       providerAttrib={providerAttrib}
     />
   ) : (
-    <div>Invalid Transactino Type</div>
+    <div>Invalid Transaction Type</div>
   );
 };
 

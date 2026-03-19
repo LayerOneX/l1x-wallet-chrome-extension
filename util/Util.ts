@@ -47,6 +47,26 @@ export class Util {
       requestId: requestId,
       ...message,
       event,
+    }).catch(() => {
+      // Service worker may be idle — ignore
+    });
+  }
+
+  /**
+   * Send response to dApp without closing the popup window.
+   * Used for "Transaction Submitted" screen — dApp gets the hash
+   * immediately while the popup stays open.
+   */
+  static respondToDapp(
+    requestId: string,
+    message: IServiceWorkerResponse
+  ) {
+    chrome.runtime.sendMessage<IInternalMessage>({
+      action: ServiceWorkerMessageAction.RESPOND_TO_DAPP,
+      requestId: requestId,
+      ...message,
+    }).catch(() => {
+      // Service worker may be idle — ignore
     });
   }
 
@@ -76,4 +96,5 @@ export class Util {
       hexString.slice(20),
     ].join("-");
   }
+
 }

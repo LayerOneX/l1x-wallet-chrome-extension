@@ -33,7 +33,7 @@ export class L1XMessageHandler {
       const functionName = _message.functionName || "";
       const contractAddress = _message.contractAddress || "";
       const args = _message.args;
-      const requestId = Date.now();
+      const requestId = crypto.randomUUID();
 
       if (!functionName || !contractAddress || !from) {
         throw new Error(
@@ -54,7 +54,7 @@ export class L1XMessageHandler {
         id: uuidv4(),
         from: from || "",
         timestamp: Date.now(),
-        requestId: requestId as any,
+        requestId,
         networkType: "L1X",
         feeLimit: _message?.feeLimit,
         nonce: _message?.nonce,
@@ -63,7 +63,7 @@ export class L1XMessageHandler {
       };
 
       this.transactionHandler.initiateTransaction(
-        requestId as any,
+        requestId,
         transaction,
         _sendResponse
       );
@@ -87,7 +87,7 @@ export class L1XMessageHandler {
       const from = _message.from || "";
       const baseContractAddress = _message.baseContractAddress || "";
       const args = _message.args;
-      const requestId = Date.now();
+      const requestId = crypto.randomUUID();
 
       if (!baseContractAddress) {
         throw new Error(
@@ -106,7 +106,7 @@ export class L1XMessageHandler {
         id: uuidv4(),
         from: from || "",
         timestamp: Date.now(),
-        requestId: requestId as any,
+        requestId,
         networkType: "L1X",
         feeLimit: _message?.feeLimit,
         nonce: _message?.nonce,
@@ -115,7 +115,7 @@ export class L1XMessageHandler {
       };
 
       this.transactionHandler.initiateTransaction(
-        requestId as any,
+        requestId,
         transaction,
         _sendResponse
       );
@@ -178,7 +178,7 @@ export class L1XMessageHandler {
             (!amount ? " amount" : "")
         );
       }
-      const requestId = Date.now();
+      const requestId = crypto.randomUUID();
       const account = await ExtensionStorage.get("wallets");
 
       const transaction: ITransferNativeToken = {
@@ -190,7 +190,7 @@ export class L1XMessageHandler {
         amount: amount?.toString() || "",
         source: "dapp",
         symbol: "L1X",
-        requestId: requestId as any,
+        requestId,
         networkType: "L1X",
         site: _sender.origin,
         feeLimit: _message?.feeLimit,
@@ -201,7 +201,7 @@ export class L1XMessageHandler {
       };
 
       this.transactionHandler.initiateTransaction(
-        requestId as any,
+        requestId,
         transaction,
         _sendResponse
       );
@@ -233,7 +233,7 @@ export class L1XMessageHandler {
             (!tokenAddress ? " tokenAddress" : "")
         );
       }
-      const requestId = Date.now();
+      const requestId = crypto.randomUUID();
       const account = await ExtensionStorage.get("wallets");
 
       const transaction: ITransferToken = {
@@ -245,7 +245,7 @@ export class L1XMessageHandler {
         tokenAddress: tokenAddress || "",
         amount: amount?.toString() || "",
         source: "dapp",
-        requestId: requestId as any,
+        requestId,
         networkType: "L1X",
         site: _sender.origin,
         feeLimit: _message?.feeLimit,
@@ -255,7 +255,7 @@ export class L1XMessageHandler {
       };
 
       this.transactionHandler.initiateTransaction(
-        requestId as any,
+        requestId,
         transaction,
         _sendResponse
       );
@@ -281,7 +281,7 @@ export class L1XMessageHandler {
       const collectionAddress = _message?.collectionAddress || "";
       const tokenId = _message?.tokenId || "";
       const account = await ExtensionStorage.get("wallets");
-      const requestId = Date.now();
+      const requestId = crypto.randomUUID();
       if (!receiver || !amount || !collectionAddress || !tokenId) {
         throw new Error(
           `Missing required parameters.` +
@@ -302,7 +302,7 @@ export class L1XMessageHandler {
         source: "dapp",
         collectionAddress: collectionAddress,
         tokenId: tokenId,
-        requestId: requestId as any,
+        requestId,
         networkType: "L1X",
         site: _sender.origin,
         feeLimit: _message?.feeLimit,
@@ -312,7 +312,7 @@ export class L1XMessageHandler {
       };
 
       this.transactionHandler.initiateTransaction(
-        requestId as any,
+        requestId,
         transaction,
         _sendResponse
       );
@@ -371,7 +371,7 @@ export class L1XMessageHandler {
     _sendResponse: (response: IServiceWorkerResponse) => void
   ) {
     try {
-      const requestId = Date.now();
+      const requestId = crypto.randomUUID();
       const url = `notification.html#sign-message?data=${encodeURIComponent(
         JSON.stringify({
           url: _sender.origin,
@@ -384,7 +384,7 @@ export class L1XMessageHandler {
       )}`;
       this.transactionHandler.openNotification(
         url,
-        requestId as any,
+        requestId,
         _sendResponse
       );
     } catch (error: any) {
@@ -403,12 +403,12 @@ export class L1XMessageHandler {
     _sendResponse: (response: IServiceWorkerResponse) => void
   ) {
     try {
-      const requestId = Date.now();
+      const requestId = crypto.randomUUID();
       await ExtensionStorage.set("payloadToSign", {
         url: _sender.origin || "",
         favIcon: _sender.tab?.favIconUrl || "",
         appName: _sender.tab?.title || "",
-        requestId: requestId as any,
+        requestId,
         from: _message?.from,
         payload: _message?.payload,
         clusterType: _message?.clusterType,
@@ -418,7 +418,7 @@ export class L1XMessageHandler {
       const url = `notification.html#sign-payload`;
       this.transactionHandler.openNotification(
         url,
-        requestId as any,
+        requestId,
         _sendResponse
       );
     } catch (error: any) {

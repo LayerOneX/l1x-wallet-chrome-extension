@@ -43,7 +43,7 @@ const Identity = () => {
   }
 
   return (
-    <div className="w-[375px] h-[600px] mx-auto overflow-y-auto px-4 py-5 relative flex flex-col">
+    <div className="app-frame mx-auto overflow-y-auto px-4 py-5 relative flex flex-col">
       <div className="text-lg font-semibold text-XBlue rounded-3xl flex items-center mb-5 text-center">
         <button className="me-4" type="button" onClick={() => navigate(-1)}>
           <ArrowLeftIcon className="w-5 h-5 " />

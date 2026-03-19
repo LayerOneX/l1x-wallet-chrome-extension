@@ -31,7 +31,7 @@ const chains: IVMChain[] = [
     environment: {
       Mainnet: {
         rpc: Config.rpc.l1x,
-        exploreruri: "https://l1xapp.com/explorer/tx/",
+        exploreruri: Config.explorer.l1x,
       },
       Testnet: {
         rpc: "https://v2-testnet-rpc.l1x.foundation",
@@ -232,10 +232,23 @@ export class L1XVM extends VirtualMachine {
 
   async importToken(tokenAddress: string) {
     try {
-      let tokens = (await ApplicationStorage.get(this.tokenTableName)) || [];
+      console.log(" In L1X importToken tokenTableName", this.tokenTableName);
+      const storage = await ExtensionStorage.get("wallets");
+      if (!storage) {
+        return false;
+      }
+      const { ACTIVE, L1X } = storage;
+  
+      const relevantWallet = L1X.find((wallet: any) => wallet.publicKey?.toLowerCase?.() === ACTIVE?.publicKey?.toLowerCase?.());
+      
+      const tokenTableName: `token-${string}-${string}-${string}` = `token-${relevantWallet?.publicKey}-${this.activeNetwork.symbol}-${this.activeNetwork.rpc}`;
+   
+      console.log("tokenTableName", tokenTableName);
+      let tokens = (await ApplicationStorage.get(tokenTableName)) || [];
       if (tokens.findIndex((el) => el.tokenAddress == tokenAddress) >= 0) {
         return true;
       }
+      console.log("Token not found in table, fetching token details");
       const tokenDetails = await this.getProvider().tokens.FT.getAttribute({
         contract_address: Util.removePrefixOx(tokenAddress.trim()),
       });
@@ -259,17 +272,20 @@ export class L1XVM extends VirtualMachine {
         isNative: false,
         usdRate: 0,
       };
+      console.log("token to be added", token);
       tokens.splice(1, 0, token);
+      console.log("tokens after adding", tokens);
       const tokenSaved = await ApplicationStorage.set(
-        this.tokenTableName,
+        tokenTableName,
         tokens
       );
+      console.log("tokenSaved", tokenSaved);
       return tokenSaved;
     } catch (error: any) {
       Logger.error(error);
       throw new Error(
         error?.errorMessage ||
-          "Failed to import token. Please enter valid token address."
+        "Failed to import token. Please enter valid token address."
       );
     }
   }
@@ -371,7 +387,7 @@ export class L1XVM extends VirtualMachine {
       if (
         collection &&
         (collection.nftList || []).findIndex((nft) => nft.tokenId == tokenId) >=
-          0
+        0
       ) {
         return true;
       }
@@ -408,50 +424,61 @@ export class L1XVM extends VirtualMachine {
       throw {
         errorMessage:
           error?.errorMessage ||
-          "Failed to import token. Please enter valid token address.",
+          "Failed to import NFT. Please enter valid NFT details.",
       };
     }
   }
 
   async #fetchTokenBalance(
     tokenAddress: string,
-    providerAttrib?: ProviderAttrib
+    providerAttrib?: ProviderAttrib,
+    publicKey?: string
   ) {
     try {
       const tokenDetails = await this.getProvider(
         providerAttrib
       ).tokens.FT.getBalance({
         contract_address: Util.removePrefixOx(tokenAddress.trim()),
-        address: Util.removePrefixOx(this.publicKey.trim()),
+        address: Util.removePrefixOx(this.publicKey.trim() || publicKey?.trim() || ""),
       });
-      return +parseFloat(tokenDetails.normalized_value).toFixed(2);
+      const val = parseFloat(tokenDetails.normalized_value);
+      return isNaN(val) ? 0 : +val.toFixed(2);
     } catch (error) {
       return 0;
     }
   }
 
-  async #getNativeTokenBalance(providerAttrib?: ProviderAttrib) {
+  async #getNativeTokenBalance(providerAttrib?: ProviderAttrib, publicKey?: string) {
     try {
       const tokenDetails = await this.getProvider(
         providerAttrib
       ).core.getAccountState({
-        address: Util.removePrefixOx(this.publicKey.trim()),
+        address: Util.removePrefixOx(this.publicKey.trim() || publicKey?.trim() || ""),
       });
-      return +parseFloat(tokenDetails.account_state.balance_formatted).toFixed(
-        2
-      );
+      const val = parseFloat(tokenDetails.account_state.balance_formatted);
+      return isNaN(val) ? 0 : +val.toFixed(2);
     } catch (error) {
       return 0;
     }
   }
 
   async listToken() {
-    let tokens = (await ApplicationStorage.get(this.tokenTableName)) || [];
+    const storage = await ExtensionStorage.get("wallets");
+    if (!storage) {
+      return []
+    }
+    const { ACTIVE, L1X } = storage;
+
+    const relevantWallet = L1X.find((wallet: any) => wallet.publicKey?.toLowerCase?.() === ACTIVE?.publicKey?.toLowerCase?.());
+    
+    const tokenTableName: `token-${string}-${string}-${string}` = `token-${relevantWallet?.publicKey}-${this.activeNetwork.symbol}-${this.activeNetwork.rpc}`;
+    console.log("tokenTableName", tokenTableName);
+    let tokens = (await ApplicationStorage.get(tokenTableName)) || [];
     tokens = await Promise.all(
       tokens.map(async (token) => {
         const balance = token.isNative
-          ? await this.#getNativeTokenBalance()
-          : await this.#fetchTokenBalance(token.tokenAddress);
+          ? await this.#getNativeTokenBalance(undefined, ACTIVE?.publicKey)
+          : await this.#fetchTokenBalance(token.tokenAddress, undefined, ACTIVE?.publicKey);
         const usdRate = await this.getTokenRate(token.symbol);
         return {
           ...token,
@@ -568,10 +595,33 @@ export class L1XVM extends VirtualMachine {
         // fee_limit: feeLimit ? +Config.l1xFeeLimit : undefined,
         // nonce: nonce ? +nonce : undefined,
       });
-      const txStatus = await this.#validateTransaction(
-        response.hash,
-        providerAttrib
-      );
+
+      const maxAttempts = 30;
+      let attempts = 0;
+      let txStatus = false;
+
+      while (attempts < maxAttempts) {
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+
+        txStatus = await this.#validateTransaction(
+          response.hash,
+          providerAttrib
+        );
+
+
+        if (txStatus) {
+          return response; // return ONLY after validation
+        }
+
+        attempts++;
+      }
+
+      // throw new Error("Transaction timeout.");
+
+      // const txStatus = await this.#validateTransaction(
+      //   response.hash,
+      //   providerAttrib
+      // );
       if (!txStatus) {
         throw new Error("Account not found.");
       }
@@ -579,9 +629,39 @@ export class L1XVM extends VirtualMachine {
     } catch (error: any) {
       throw {
         errorMessage:
-          error?.errorMessage || "Failed to transfer token. Please try again.",
+          error?.errorMessage || L1XVM.parseRpcError(error, "Failed to transfer token. Please try again."),
       };
     }
+  }
+
+  /**
+   * Extract a user-friendly message from an L1X SDK / RPC error.
+   * Falls back to `fallback` when the error shape is unrecognised.
+   */
+  static parseRpcError(error: any, fallback: string): string {
+    if (!error) return fallback;
+    const reason: string | undefined = error.message ?? error.reason;
+    if (reason) {
+      const lower = reason.toLowerCase();
+      if (lower.includes("insufficient") || lower.includes("exceeds balance")) {
+        return "Insufficient balance.";
+      }
+      if (
+        lower.includes("failed to fetch") ||
+        lower.includes("network error") ||
+        lower.includes("econnrefused") ||
+        lower.includes("timeout") ||
+        lower.includes("enotfound") ||
+        lower.includes("502") ||
+        lower.includes("503")
+      ) {
+        return "RPC connection failed. Consider switching the RPC in Settings > Networks.";
+      }
+      if (lower.includes("account not found")) {
+        return "Account not found on this network.";
+      }
+    }
+    return fallback;
   }
 
   async transferToken(
@@ -621,6 +701,9 @@ export class L1XVM extends VirtualMachine {
         private_key: Util.removePrefixOx(privateKey.trim()),
         // fee_limit: feeLimit ?? (Config.l1xFeeLimit as any),
       });
+
+      await new Promise((resolve) => setTimeout(() => resolve(true), 5000));
+
       const txStatus = await this.#validateTransaction(
         response.hash,
         providerAttrib
@@ -633,7 +716,7 @@ export class L1XVM extends VirtualMachine {
       Logger.error(error);
       throw {
         errorMessage:
-          error?.errorMessage || "Failed to transfer token. Please try again.",
+          error?.errorMessage || L1XVM.parseRpcError(error, "Failed to transfer token. Please try again."),
       };
     }
   }
@@ -692,7 +775,7 @@ export class L1XVM extends VirtualMachine {
       Logger.error(error);
       throw {
         errorMessage:
-          error?.errorMessage || "Failed to transfer NFT. Please try again.",
+          error?.errorMessage || L1XVM.parseRpcError(error, "Failed to transfer NFT. Please try again."),
       };
     }
   }
@@ -729,6 +812,9 @@ export class L1XVM extends VirtualMachine {
         private_key: Util.removePrefixOx(privateKey.trim()),
         // fee_limit: feeLimit
       });
+
+      await new Promise((resolve) => setTimeout(() => resolve(true), 5000));
+
       // validate transaction
       const txStatus = await this.#validateTransaction(
         transaction.hash,
@@ -748,12 +834,21 @@ export class L1XVM extends VirtualMachine {
   }
 
   async getTransactionReceipt(hash: string, providerAttrib?: ProviderAttrib) {
-    const receipt = await this.getProvider(
-      providerAttrib
-    )?.core.getTransactionReceipt({
-      hash: hash || "",
-    });
-    return receipt;
+    try {
+      const receipt = await this.getProvider(
+        providerAttrib
+      )?.core.getTransactionReceipt({
+        hash: hash || "",
+      });
+      return receipt;
+    } catch (error: any) {
+      throw {
+        errorMessage: L1XVM.parseRpcError(
+          error,
+          "Failed to fetch transaction receipt. Please try again."
+        ),
+      };
+    }
   }
 
   convertToDecimals(value: number, decimals = 18): any {
@@ -765,10 +860,19 @@ export class L1XVM extends VirtualMachine {
   }
 
   async getCurrentNonce(providerAttrib?: any): Promise<string> {
-    const nonce = await this.getProvider(providerAttrib).core.getCurrentNonce({
-      address: Util.removePrefixOx(this.publicKey.trim()),
-    });
-    return (+nonce + 1).toString();
+    try {
+      const nonce = await this.getProvider(providerAttrib).core.getCurrentNonce({
+        address: Util.removePrefixOx(this.publicKey.trim()),
+      });
+      return (+nonce + 1).toString();
+    } catch (error: any) {
+      throw {
+        errorMessage: L1XVM.parseRpcError(
+          error,
+          "Unable to fetch nonce. Check your network connection."
+        ),
+      };
+    }
   }
 
   async getEstimateFee(

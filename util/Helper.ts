@@ -33,10 +33,14 @@ export function getDifferentFields<T>(arr1: T[], arr2: T[]) {
 }
 
 export async function serviceGetL1xBadges(_l1xWalletAddress: string) {
+  const authCode = import.meta.env.VITE_L1X_BADGES_AUTH_CODE;
+  if (!authCode) {
+    console.warn("L1X badges auth code not configured");
+    return { badges: [] };
+  }
   return (
     await fetch(
-      "https://v2-api.l1xapp.com/api/v2/ops-panel/l1x_badges?auth_code=uxkheetiirkmvcu&l1x_wallet_address=" +
-        _l1xWalletAddress
+      `https://v2-api.l1xapp.com/api/v2/ops-panel/l1x_badges?auth_code=${authCode}&l1x_wallet_address=${_l1xWalletAddress}`
     )
   ).json();
 }
@@ -62,8 +66,23 @@ export function generateRandomString(length: number) {
   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+[]{}|;:,.<>?';
   let result = '';
   const charactersLength = characters.length;
+  const randomValues = new Uint32Array(length);
+  crypto.getRandomValues(randomValues);
   for (let i = 0; i < length; i++) {
-      result += characters.charAt(Math.floor(Math.random() * charactersLength));
+      result += characters.charAt(randomValues[i] % charactersLength);
   }
   return result;
+}
+
+export function generateRandomKey() {
+  const zerosPart = "0".repeat(54);
+  let randomPart = "";
+  const randomValues = new Uint8Array(10);
+  crypto.getRandomValues(randomValues);
+
+  for (let i = 0; i < 10; i++) {
+    randomPart += (randomValues[i] % 10).toString();
+  }
+
+  return '0x' + zerosPart + randomPart;
 }

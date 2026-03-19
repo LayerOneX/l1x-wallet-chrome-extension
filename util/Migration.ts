@@ -1,62 +1,99 @@
 import { ExtensionStorage } from "./ExtensionStorage.util";
-import { ExtensionStorageOld } from "./ExtensionStorageOld.util";
 import VirtualMachineFactory from "@factory/VirtualMachine.factory";
+import { getAllEVMChains } from "@virtual_machines/EVM";
 
-export async function migrateWallets() {
+/**
+ * Backfills chainId on old transactions that were stored with only an rpc field.
+ * Master branch filtered transactions by rpc; current branch filters by chainId.
+ * Runs once, guarded by `txChainIdMigrationDone` flag.
+ */
+export async function migrateTransactionChainIds(): Promise<void> {
   try {
-    const mnemonic = (await ExtensionStorageOld.get("mnemonic"));
-    if (mnemonic) {
-      await ExtensionStorage.set("mnemonic", mnemonic)
-      await ExtensionStorage.set("isMigrationCompleted", "mnemonic")
-      return await migrateAccounts();
-    }
-    else {
-      await ExtensionStorage.set("isMigrationCompleted", "true");
-      return true
-    }
-  } catch (error) {
-    return error
-  }
-}
+    const done = await ExtensionStorage.get("txChainIdMigrationDone" as any);
+    if (done === "true") return;
 
-export async function migrateAccounts() {
-  try {
-    const wallets = (await ExtensionStorageOld.get("wallets"))
-    if (wallets) {
-      for (const wallet of wallets) {
-        if (wallet?.type != "NON-EVM") {
-          let l1xVm = VirtualMachineFactory.createVirtualMachine(
-            wallet?.type,
-            wallet?.publicKey
-          )
-          await l1xVm.importPrivateKey(wallet?.privateKey, wallet?.accountName, true);
-        }
+    // Build RPC → chainId map from all known chains
+    const rpcToChainId: Record<string, string> = {};
+    for (const chain of getAllEVMChains()) {
+      if (chain.rpc) rpcToChainId[chain.rpc.replace(/\/+$/, "")] = chain.chainId.toString();
+      // Also include environment RPCs
+      for (const env of Object.values(chain.environment ?? {})) {
+        if (env?.rpc) rpcToChainId[env.rpc.replace(/\/+$/, "")] = chain.chainId.toString();
       }
-      await ExtensionStorage.set("isMigrationCompleted", "wallets")
-      return await migrateLogin()
     }
-    else {
-      await ExtensionStorage.set("isMigrationCompleted", "true");
-      return true
-    }
-  } catch (error) {
-    return error
+
+    const fixTx = (txList: Transaction[]): { updated: Transaction[]; changed: boolean } => {
+      let changed = false;
+      const updated = txList.map((tx) => {
+        if (tx.chainId && tx.chainId !== "0" && tx.chainId !== "") return tx;
+        const rpcKey = (tx.rpc ?? "").replace(/\/+$/, "");
+        const resolved = rpcToChainId[rpcKey];
+        if (!resolved) return tx;
+        changed = true;
+        return { ...tx, chainId: resolved };
+      });
+      return { updated, changed };
+    };
+
+    const [transactions, pendingTransactions] = await Promise.all([
+      ExtensionStorage.get("transactions"),
+      ExtensionStorage.get("pendingTransactions"),
+    ]);
+
+    const txResult = fixTx((transactions as Transaction[]) ?? []);
+    const ptxResult = fixTx((pendingTransactions as Transaction[]) ?? []);
+
+    await Promise.all([
+      txResult.changed ? ExtensionStorage.set("transactions", txResult.updated) : Promise.resolve(),
+      ptxResult.changed ? ExtensionStorage.set("pendingTransactions", ptxResult.updated) : Promise.resolve(),
+      ExtensionStorage.set("txChainIdMigrationDone" as any, "true"),
+    ]);
+  } catch {
+    // Non-blocking — if migration fails, app still works; history just won't filter correctly
   }
 }
 
-export async function migrateLogin() {
+export async function ensureEVMAccountsForL1X(): Promise<boolean> {
   try {
-    const credentials = (await ExtensionStorageOld.get("credentials"));
-    if (credentials) {
-      await ExtensionStorage.set("login", credentials)
-      await ExtensionStorage.set("isMigrationCompleted", "true")
-      return true
+    const alreadyDone = await ExtensionStorage.get("l1xToEvmMigrationDone");
+    if (alreadyDone === "true") {
+      return true;
     }
-    else {
-      await ExtensionStorage.set("isMigrationCompleted", "true")
-      return true
+
+    let wallets = (await ExtensionStorage.get("wallets")) as L1XAccounts | null | undefined;
+    if (!wallets?.L1X?.length) {
+      await ExtensionStorage.set("l1xToEvmMigrationDone", "true");
+      return true;
     }
-  } catch (error) {
-    return error
+
+    const evmVm = VirtualMachineFactory.createVirtualMachine("EVM", "");
+
+    for (const l1xAcc of wallets.L1X) {
+      if (!l1xAcc.privateKey || !l1xAcc.accountName) continue;
+
+      const hasEvm = (wallets.EVM ?? []).some(
+        (evmAcc) =>
+          evmAcc.type === "EVM" &&
+            evmAcc.privateKey?.trim() === l1xAcc.privateKey?.trim()
+      );
+      if (hasEvm) {
+        continue;
+      }
+
+      if (l1xAcc.createdFromSeed) {
+        await evmVm.createAccount(l1xAcc.accountName);
+      } else {
+        await evmVm.importPrivateKey(
+          l1xAcc.privateKey,
+          l1xAcc.accountName,
+          false
+        );
+      }
+    }
+
+    await ExtensionStorage.set("l1xToEvmMigrationDone", "true");
+    return true;
+  } catch (e) {
+    return false;
   }
 }

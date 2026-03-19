@@ -7,6 +7,7 @@ import { ApplicationStorage } from "@util/ApplicationStorage.util";
 import { ExtensionStorage } from "@util/ExtensionStorage.util";
 import { Logger } from "@util/Logger.util";
 import { JsonRpcProvider, TransactionReceipt } from "ethers";
+import { getCachedTokenRate, getCachedTokenRatesBatch } from "@util/PriceCache.util";
 
 export default abstract class VirtualMachine implements IVirtualMachine {
   networkType: VirtualMachineType;
@@ -36,9 +37,9 @@ export default abstract class VirtualMachine implements IVirtualMachine {
   async changeActiveNetwork(network: IVMChain) {
     const activeEnvironment =
       (await ExtensionStorage.get("activeEnvironment")) ?? "";
-    let activeNetwork = this.chains.find(
-      (chain) => chain.symbol == network.symbol
-    );
+    let activeNetwork =
+      this.chains.find((chain) => chain.chainId === network.chainId) ||
+      this.chains.find((chain) => chain.symbol === network.symbol); // fallback for old stored activeNetwork without chainId
     if (activeNetwork) {
       // update active environment
       const environment =
@@ -54,32 +55,29 @@ export default abstract class VirtualMachine implements IVirtualMachine {
     }
   }
 
-  protected async getTokenRate(symbol: string) {
+  async getTokenRate(symbol: string) {
     try {
-      if (symbol?.toString().toLowerCase() == 'l1x') {
-        const usdValue =
-          (
-            await (
-              await fetch(
-                `https://dev-api.l1xapp.com/api/v2/price/l1x_getL1xPrice`
-              )
-            ).json()
-          )?.data?.price ?? 0;
+      return getCachedTokenRate(symbol);
+    } catch {
+      return 0;
+    }
+  }
 
-        return !isNaN(usdValue) ? +usdValue : 0;
-      }
-      symbol = symbol.toUpperCase() == "USDT" ? "USDC" : symbol;
-      const usdValue =
-        (
-          await (
-            await fetch(
-              `https://api.mexc.com/api/v3/ticker/price?symbol=${symbol}USDT`
-            )
-          ).json()
-        )?.price ?? 0;
+  async getTokenRatesBatch(symbols: string[]): Promise<Record<string, number>> {
+    return getCachedTokenRatesBatch(symbols);
+  }
 
-      return !isNaN(usdValue) ? +usdValue : 0;
-    } catch (error) {
+  async fetchWL1XPriceInUsdt(): Promise<number> {
+    try {
+      const res = await (
+        await fetch(
+          "https://v2-api.l1xapp.com/api/v2/price/l1x_getL1XCoinMarketPrice"
+        )
+      ).json();
+      const usdValue = res?.data ?? 0;
+      const num = Number(usdValue);
+      return !isNaN(num) ? +num : 0;
+    } catch {
       return 0;
     }
   }
@@ -151,6 +149,9 @@ export default abstract class VirtualMachine implements IVirtualMachine {
           };
         }
         transaction.rpc = rpc ?? this.activeNetwork.rpc;
+        if (!transaction.txStatus) {
+          transaction.txStatus = "pending";
+        }
         let transactions = (await ExtensionStorage.get("transactions")) ?? [];
         transactions = [transaction, ...transactions];
         await ExtensionStorage.set("transactions", transactions);
@@ -188,8 +189,30 @@ export default abstract class VirtualMachine implements IVirtualMachine {
   async listTransactions() {
     try {
       let transactions = (await ExtensionStorage.get("transactions")) ?? [];
+      const activeChainId = Number(this.activeNetwork.chainId);
       transactions = transactions.filter(
-        (el) => el.from == this.publicKey && el.rpc == this.activeNetwork.rpc
+        (el) =>
+          el.from?.toLowerCase() == this.publicKey?.toLowerCase() &&
+          (el.chainId != null && Number(el.chainId) === activeChainId)
+      );
+      return transactions;
+    } catch (error: any) {
+      throw {
+        errorMessage:
+          error?.errorMessage ??
+          "Failed to list transactions. Please try again.",
+      };
+    }
+  }
+
+  async listAllTransactions(publicKeys?: string[]) {
+    try {
+      let transactions = (await ExtensionStorage.get("transactions")) ?? [];
+      const keys = publicKeys?.length
+        ? publicKeys.map((k) => k.toLowerCase())
+        : [this.publicKey?.toLowerCase()];
+      transactions = transactions.filter(
+        (el) => keys.includes(el.from?.toLowerCase())
       );
       return transactions;
     } catch (error: any) {

@@ -8,12 +8,14 @@ export class ExtensionEventEmitter {
   ) {
     switch (true) {
       case changes.connectedSites && areaName == "local": {
-        const newValue: IExtensionStorage["connectedSites"] = JSON.parse(
-          await WalletCrypto.decrypt(changes?.connectedSites?.newValue)
-        );
-        const oldValue: IExtensionStorage["connectedSites"] = JSON.parse(
-          await WalletCrypto.decrypt(changes?.connectedSites?.oldValue)
-        );
+        const rawNew = changes?.connectedSites?.newValue;
+        const rawOld = changes?.connectedSites?.oldValue;
+        const newValue: IExtensionStorage["connectedSites"] = rawNew
+          ? JSON.parse(await WalletCrypto.decrypt(rawNew))
+          : [];
+        const oldValue: IExtensionStorage["connectedSites"] = rawOld
+          ? JSON.parse(await WalletCrypto.decrypt(rawOld))
+          : [];
         const difference = getDifferentFields<
           IExtensionStorage["connectedSites"][0]
         >(oldValue, newValue);
@@ -45,15 +47,68 @@ export class ExtensionEventEmitter {
         if (Object.keys(disconnectedAddress)?.length) {
           chrome.tabs.query({}, (tabs) => {
             tabs.forEach((tab) => {
-              if (tab.id) {
+              if (tab.id && tab.url?.startsWith("http")) {
                 chrome.tabs.sendMessage(tab.id, {
                   event: "DISCONNECT",
                   data: disconnectedAddress,
-                });
+                }).catch(() => {});
               }
             });
           });
         }
+
+        // Emit ACCOUNTS_CHANGED for sites whose accounts changed
+        const changedAccounts: { [site: string]: string[] } = {};
+        newValue.forEach((site) => {
+          const oldSite = oldValue.find((s) => s.url === site.url);
+          const oldAccts = oldSite?.accounts ?? [];
+          const newAccts = site.accounts ?? [];
+          if (JSON.stringify(oldAccts) !== JSON.stringify(newAccts)) {
+            changedAccounts[site.url] = newAccts;
+          }
+        });
+
+        if (Object.keys(changedAccounts).length) {
+          chrome.tabs.query({}, (tabs) => {
+            tabs.forEach((tab) => {
+              if (tab.id && tab.url) {
+                try {
+                  const tabOrigin = new URL(tab.url).origin;
+                  if (changedAccounts[tabOrigin]) {
+                    chrome.tabs.sendMessage(tab.id, {
+                      event: "ACCOUNTS_CHANGED",
+                      data: changedAccounts[tabOrigin],
+                    }).catch(() => {});
+                  }
+                } catch {}
+              }
+            });
+          });
+        }
+        break;
+      }
+
+      case changes.activeNetwork && areaName == "local": {
+        try {
+          const rawNetwork = changes?.activeNetwork?.newValue;
+          if (!rawNetwork) break;
+          const newNetwork = JSON.parse(
+            await WalletCrypto.decrypt(rawNetwork)
+          );
+          if (newNetwork?.chainId) {
+            const hexChainId = "0x" + newNetwork.chainId.toString(16);
+            chrome.tabs.query({}, (tabs) => {
+              tabs.forEach((tab) => {
+                if (tab.id && tab.url?.startsWith("http")) {
+                  chrome.tabs.sendMessage(tab.id, {
+                    event: "CHAIN_CHANGED",
+                    data: hexChainId,
+                  }).catch(() => {});
+                }
+              });
+            });
+          }
+        } catch {}
         break;
       }
 

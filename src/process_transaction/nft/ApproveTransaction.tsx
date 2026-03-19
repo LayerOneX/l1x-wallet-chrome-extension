@@ -10,6 +10,7 @@ import { ProviderAttrib } from "@l1x/l1x-wallet-sdk";
 import brokenNFT from "@assets/images/image-broken.svg";
 import { Tooltip } from "react-tooltip";
 import { Copy } from "react-feather";
+import { ExtensionStorage } from "@util/ExtensionStorage.util";
 
 const ApproveTransaction: FC<
   ITransferNFT & {
@@ -25,10 +26,15 @@ const ApproveTransaction: FC<
   async function approveNFTTransfer() {
     try {
       setLoader(true);
+      const wallets = await ExtensionStorage.get("wallets");
+      const activePrivateKey = wallets?.ACTIVE?.privateKey;
+      if (!activePrivateKey) {
+        throw { errorMessage: "Account not found." };
+      }
       await appContext?.virtualMachine.approveNFTTransfer(
         transaction.collectionAddress,
         transaction.tokenId,
-        appContext.privateKey,
+        activePrivateKey,
         transaction.providerAttrib,
         transaction.feeLimit ? Number(transaction.feeLimit) : undefined
       );
@@ -74,7 +80,7 @@ const ApproveTransaction: FC<
   }
 
   return (
-    <div className="w-[375px] h-[600px] mx-auto overflow-y-auto px-4 py-5 relative flex flex-col">
+    <div className="app-frame mx-auto overflow-y-auto px-4 py-5 relative flex flex-col">
       <div className="flex-grow-[1]">
         <div className="w-full text-center mb-3">
           <div className="text-lg font-semibold text-XBlue rounded-3xl flex items-center justify-center mb-5 text-center">

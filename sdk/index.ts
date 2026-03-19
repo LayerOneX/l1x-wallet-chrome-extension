@@ -16,16 +16,6 @@ import {
 } from "../service_worker/index.interface";
 import { GetAccountStateResponse, ProviderAttrib } from "@l1x/l1x-wallet-sdk";
 
-class CustomError extends Error {
-  status: string;
-  data: any;
-  constructor({ status, errorMessage, data }: any) {
-    super(errorMessage);
-    this.status = status;
-    this.data = data;
-  }
-}
-
 /**
  * Class implementing the IXWalletAPI interface for interacting with the XWallet extension.
  */
@@ -43,12 +33,59 @@ class XWalletAPI implements IXWalletAPI {
     resolve: Function,
     reject: Function
   ) {
-    chrome.runtime.sendMessage(
-      this.extensionId,
-      data,
-      (response: IServiceWorkerResponse) =>
-        response?.status == "success" ? resolve(response) : reject(response)
-    );
+    if (!this.extensionId) {
+      const errorResponse: IServiceWorkerResponse = {
+        status: "failure",
+        errorMessage: "Extension ID not found. Please ensure XWallet extension is installed.",
+        data: null,
+      };
+      reject(errorResponse);
+      return;
+    }
+
+    try {
+      chrome.runtime.sendMessage(
+        this.extensionId,
+        data,
+        (response: IServiceWorkerResponse) => {
+          // Check for Chrome runtime errors
+          if (chrome.runtime.lastError) {
+            const errorResponse: IServiceWorkerResponse = {
+              status: "failure",
+              errorMessage: chrome.runtime.lastError.message || "Failed to communicate with extension",
+              data: null,
+            };
+            reject(errorResponse);
+            return;
+          }
+
+          // Handle undefined or null response
+          if (!response) {
+            const errorResponse: IServiceWorkerResponse = {
+              status: "failure",
+              errorMessage: "No response from extension",
+              data: null,
+            };
+            reject(errorResponse);
+            return;
+          }
+
+          // Handle response
+          if (response.status === "success") {
+            resolve(response);
+          } else {
+            reject(response);
+          }
+        }
+      );
+    } catch (error: any) {
+      const errorResponse: IServiceWorkerResponse = {
+        status: "failure",
+        errorMessage: error?.message || "Failed to send message to extension",
+        data: null,
+      };
+      reject(errorResponse);
+    }
   }
 
   /**
@@ -75,38 +112,17 @@ class XWalletAPI implements IXWalletAPI {
    */
   connect(providerAttrib: ProviderAttrib): Promise<IServiceWorkerResponse> {
     return new Promise<IServiceWorkerResponse>((resolve, reject) => {
-      this.isConnected()
-        .then((res) => {
-          if (!res.data?.isConnected) {
-            this.sendMessage(
-              {
-                action: ExternalMessageAction.CONNECT,
-                data: providerAttrib,
-              },
-              resolve,
-              reject
-            );
-          } else {
-            resolve({
-              status: "success",
-              errorMessage: "",
-              data: {
-                isConnected: true,
-              },
-            });
-          }
-        })
-        .catch((err) =>
-          reject(
-            new CustomError({
-              status: "failure",
-              errorMessage: err,
-              data: null,
-            })
-          )
-        );
+      this.sendMessage(
+        {
+          action: ExternalMessageAction.CONNECT,
+          data: providerAttrib,
+        },
+        resolve,
+        reject
+      );
     });
   }
+
 
   /**
    * Disconnects the site from the wallet.
@@ -286,9 +302,8 @@ class XWalletAPI implements IXWalletAPI {
     if (!config?.clusterType || !config?.endpoint) {
       return {
         status: "failure",
-        errorMessage: `Missing require argument. ${
-          !config?.clusterType ? "clusterType" : ""
-        } ${!config?.endpoint ? "endpoint" : ""}`,
+        errorMessage: `Missing require argument. ${!config?.clusterType ? "clusterType" : ""
+          } ${!config?.endpoint ? "endpoint" : ""}`,
         data: "",
       };
     }

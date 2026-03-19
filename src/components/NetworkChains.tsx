@@ -12,8 +12,8 @@ const NetworkChains = memo(() => {
           appContext.virtualMachine.activeNetwork &&
             chain.symbol != appContext.virtualMachine.activeNetwork.symbol
             ? "opacity-30"
-            : "",
-          "w-6 h-6 flex items-center justify-center"
+            : "scale-125",
+          "w-6 h-6 flex items-center justify-center "
         )}
         type="button"
         onClick={() => appContext.changeActiveNetwork(chain)}

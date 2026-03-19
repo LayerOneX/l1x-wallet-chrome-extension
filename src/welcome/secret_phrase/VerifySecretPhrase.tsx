@@ -46,18 +46,22 @@ const VerifySecretPhrase = (props: ITermsAndConditionsProps) => {
             icon: "no-border",
           },
         });
-        // alert("Invalid mnemonic. Please try with valid mnemonic.")
       }
-      const virtualMachine = VirtualMachineFactory.createVirtualMachine(
+      const l1xVm = VirtualMachineFactory.createVirtualMachine(
         "L1X",
         ""
       );
-      await ExtensionStorage.set("mnemonic", props.form.secretPhrase.join(" "));
-      const accountCreated = await virtualMachine.createAccount(
-        "Primary Account"
+      const evmVm = VirtualMachineFactory.createVirtualMachine(
+        "EVM",
+        ""
       );
-      if (!accountCreated) {
-        throw new Error("Failed to create account. Please try again.");
+      await ExtensionStorage.set("mnemonic", props.form.secretPhrase.join(" "));
+
+      const l1xOk = await l1xVm.createAccount("Primary Account");
+      const evmOk = await evmVm.createAccount("Primary Account");
+
+      if (!evmOk || !l1xOk) {
+        throw new Error("Failed to create accounts. Please try again.");
       }
       return true;
     } catch (error) {
@@ -67,11 +71,10 @@ const VerifySecretPhrase = (props: ITermsAndConditionsProps) => {
         secretPhraseToVerify: [],
       }));
       Logger.error(error);
-      // alert("Failed to store mnemonic.");
       Swal.fire({
         iconHtml: XCircleIconHtml,
         title: "Failed",
-        text: "Failed to store mnemonic.",
+        text: "Failed to create wallet. Please try again.",
         customClass: {
           icon: "no-border",
         },
@@ -80,19 +83,21 @@ const VerifySecretPhrase = (props: ITermsAndConditionsProps) => {
   }
 
   return (
-    <div className="w-[375px] h-[600px] mx-auto overflow-y-auto px-4 py-5 relative flex flex-col">
-      <div className="bg-XLightBlue px-3 py-2 text-sm font-semibold text-XBlue rounded-3xl flex items-center mb-5 min-h-[40px]">
-        <button className="me-4" onClick={navigateBack}>
-          <ArrowLeftIcon className="w-5 h-5 " />
-        </button>
+    <div className="app-frame mx-auto bg-dark-bg overflow-y-auto px-5 pt-5 pb-6 flex flex-col">
+      <button
+        className="bg-dark-card border border-dark-border text-white rounded-full h-12 px-4 flex items-center gap-3 text-[14px] font-semibold mb-5 hover:bg-dark-surface transition-colors duration-200"
+        onClick={navigateBack}
+      >
+        <ArrowLeftIcon className="w-5 h-5 text-txt-secondary" />
         Verify Phrase
-      </div>
+      </button>
+
       <div className="flex-grow-[1]">
-        <p className="text-sm">
-          Enter the 12-word recovery phrase to import your wallet.
+        <p className="text-white/70 text-[14px] leading-6">
+          Verify your wallet by entering the recovery phrase you just saved.
         </p>
 
-        <div className="w-full my-10 grid grid-cols-3 gap-4">
+        <div className="w-full mt-6 grid grid-cols-3 gap-3">
           {secretPhrase.map((item: string, index) => {
             return (
               <div className="relative" key={`verify_phrase_${index}`}>
@@ -107,9 +112,9 @@ const VerifySecretPhrase = (props: ITermsAndConditionsProps) => {
                     })
                   }
                   onPaste={(event) => handlePaste(event)}
-                  className="bg-gray-100 text-xs px-4 py-3 rounded-md w-full outline-none"
+                  className="bg-dark-card border border-dark-border text-[12px] px-3 py-2.5 rounded-xl w-full outline-none text-white shadow-[0_8px_20px_rgba(0,0,0,0.25)] focus:border-XOrange/50 focus:ring-1 focus:ring-XOrange/20 transition-colors duration-200"
                 />
-                <span className="text-slate-400 absolute top-1 left-1 text-[8px]">
+                <span className="text-white/30 absolute top-1 left-2 text-[9px]">
                   {index + 1}
                 </span>
               </div>
@@ -119,13 +124,15 @@ const VerifySecretPhrase = (props: ITermsAndConditionsProps) => {
       </div>
 
       <button
-        className={`flex items-center justify-center text-sm text-white px-3 py-2 rounded-3xl w-full min-h-[40px] ${
-          disableSubmit ? "bg-XOrange/70 pointer-event-none" : "bg-XOrange"
+        className={`flex items-center justify-center text-sm font-semibold text-white px-3 py-4 rounded-2xl w-full transition-all duration-200 ${
+          disableSubmit
+            ? "bg-XOrange/40 cursor-not-allowed"
+            : "bg-XOrange hover:brightness-110 shadow-lg shadow-XOrange/20"
         }`}
         disabled={disableSubmit}
         onClick={handleSubmit}
       >
-        Submit
+        Verify & Create Wallet
       </button>
     </div>
   );

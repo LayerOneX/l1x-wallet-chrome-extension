@@ -5,10 +5,11 @@ import { Util } from "@util/Util";
 import { ExtensionStorage } from "@util/ExtensionStorage.util";
 import Spinner from "../components/Spinner";
 import ChangeNetworkRequest from "../change_network_request/ChangeNetworkRequest";
-import classNames from "classnames";
-import { connectAccountsToSite } from "@util/Account.util";
+import { connectAccountsToSite, listConnectedAccounts } from "@util/Account.util";
 import { Logger } from "@util/Logger.util";
 import { CheckCircleIcon } from "@heroicons/react/24/outline";
+import { Button } from "@ui/index";
+import xwalletIcon from "@assets/images/L1X_icon.png";
 
 interface IConnectRequestProps {
   url: string;
@@ -17,6 +18,7 @@ interface IConnectRequestProps {
   appName: string;
   clusterType: string;
   endpoint: string;
+  source?: "ethereum" | "l1x"; // "ethereum" = window.ethereum, "l1x" = window.L1X
 }
 
 const ConnectRequest: FC<{ from?: string; callback?: () => void }> = (
@@ -46,10 +48,10 @@ const ConnectRequest: FC<{ from?: string; callback?: () => void }> = (
   }, []);
 
   useEffect(() => {
-    if (appContext?.virtualMachine) {
+    if (appContext?.virtualMachine || data) {
       listWallets();
     }
-  }, [appContext?.virtualMachine]);
+  }, [appContext?.virtualMachine, data]);
 
   useEffect(() => {
     if (appContext && wallets.length) {
@@ -62,7 +64,12 @@ const ConnectRequest: FC<{ from?: string; callback?: () => void }> = (
   async function listWallets() {
     const wallets = await ExtensionStorage.get("wallets");
     if (wallets) {
-      setWallets(wallets.L1X);
+      // Show EVM accounts when request comes from window.ethereum
+      if (data?.source === "ethereum") {
+        setWallets(wallets.EVM || []);
+      } else {
+        setWallets(wallets.L1X);
+      }
     }
   }
 
@@ -80,22 +87,46 @@ const ConnectRequest: FC<{ from?: string; callback?: () => void }> = (
       const walletsToConnect = Object.keys(selectedWallets).filter(
         (el) => selectedWallets[el]
       );
+      
+      if (walletsToConnect.length === 0) {
+        throw {
+          errorMessage: "No accounts selected. Please select at least one account.",
+        };
+      }
+      
+      if (!data?.url) {
+        throw {
+          errorMessage: "Invalid site URL.",
+        };
+      }
+      
       const site: Omit<IConnectedSite, "accounts"> = {
-        url: data?.url || "",
+        url: data.url,
         favIcon: data?.favIcon || "",
         permissions: [],
         connectedAt: Date.now(),
         l1xProviderConfig: l1xProviderConfig,
       };
+      
       const updateSite = await connectAccountsToSite(site, walletsToConnect);
       if (!updateSite) {
         throw {
           errorMessage: "Failed to connect account.",
         };
       }
+      
+      // Verify accounts were stored correctly
+      const storedAccounts = await listConnectedAccounts(site.url);
+      if (!storedAccounts || storedAccounts.length === 0) {
+        throw {
+          errorMessage: "Failed to verify account connection. Please try again.",
+        };
+      }
+      
       if (props.callback && typeof props.callback == "function") {
         return props.callback();
       }
+      
       Util.closeNotificationWindow(
         data?.requestId || "",
         {
@@ -120,94 +151,100 @@ const ConnectRequest: FC<{ from?: string; callback?: () => void }> = (
     }
   }
 
-  return appContext?.type != "L1X" ? (
+  return appContext?.type != "L1X" && data?.source !== "ethereum" ? (
     <ChangeNetworkRequest requestId={data?.requestId} />
   ) : (
-    <div className="w-[375px] h-[600px] mx-auto overflow-y-auto px-4 py-5 relative flex flex-col">
-      <div className="flex-grow-[1]">
-        <div className="text-[10px] font-medium flex items-center justify-center  text-right mb-5 bg-XLightBlue absolute top-0 left-0 w-full px-4 py-1">
-          L1X {l1xProviderConfig.clusterType}
-        </div>
-        <div className="w-full mt-4">
-          <div className="relative bg-slate-100 p-4 rounded-lg mb-5">
-            <div className="relative z-10 h-8 flex w-full">
-              <img
-                src={data?.favIcon}
-                alt="Website Image"
-                className="max-w-full"
-              />
-              <div className="flex-col ps-4">
-                <h4 className="text-xs font-semibold">{data?.appName}</h4>
-                <h6 className="text-[10px] text-slate-600">{data?.url}</h6>
-              </div>
-            </div>
-          </div>
-          <div className="w-full text-center">
-            <h3 className="text-base font-semibold mb-1 ">
-              Connect with X-Wallet
-            </h3>
-            <p className="text-xs text-slate-500 mb-3 ">
-              Select the account(s) to use on this site
-            </p>
-          </div>
-          <div className="flex-col h-[295px] overflow-y-auto">
-            {wallets.map((wallet) => (
-              <label
-                className="relative cursor-pointer z-10 flex px-3 py-2 align-middle items-center justify-between bg-slate-100 rounded-full mb-2"
-                htmlFor={wallet.publicKey.toString()}
-              >
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    className="form-checkbox h-4 w-4 text-blue-600 me-3 border border-slate-300 appearance-none hidden"
-                    id={wallet.publicKey.toString()}
-                    checked={selectedWallets[wallet.publicKey]}
-                    onChange={(event) =>
-                      setSelectedWallets((prevState) => ({
-                        ...prevState,
-                        [wallet.publicKey]: event.target.checked,
-                      }))
-                    }
-                  />
+    <div className="app-frame mx-auto overflow-hidden p-3 pb-4 flex flex-col gap-3">
+      {/* <div className="app-pill w-full px-3 py-1 text-[10px] leading-tight font-medium text-center text-txt-secondary rounded-md">
+        L1X {l1xProviderConfig.clusterType}
+      </div> */}
 
-                  <img src={wallet.icon} alt="Website Image" className="h-11" />
-                  <div className="flex-col ps-2">
-                    <h4 className="text-xs font-semibold pb-1">
-                      {wallet.accountName}
-                    </h4>
-                    <h6 className="text-[10px] text-slate-600">
-                      {Util.wrapPublicKey(wallet.publicKey)}
-                    </h6>
-                  </div>
-                </div>
-                {selectedWallets[wallet.publicKey] ? (
-                  <CheckCircleIcon className="w-5 h-5 text-green-500" />
-                ) : (
-                  ""
-                )}
-              </label>
-            ))}
+      <div className="app-card-soft px-3 py-2.5">
+        <div className="flex w-full items-center gap-3 min-w-0">
+          <img
+            src={data?.favIcon}
+            alt="Website Image"
+            className="h-9 w-9 rounded-full object-cover shrink-0"
+          />
+          <div className="min-w-0">
+            <h4 className="text-sm font-semibold text-white truncate">
+              {data?.appName}
+            </h4>
+            <h6 className="text-xs text-txt-secondary truncate">{data?.url}</h6>
           </div>
         </div>
       </div>
-      <div className="text-center">Only connect with sites you trust.</div>
-      <div className="grid grid-cols-2 gap-3 mt-5">
-        <button
-          className="flex items-center justify-center text-sm text-XOrange hover:text-white border border-XOrange hover:bg-XOrange  bg-transparent px-3 py-2 rounded-3xl w-full min-h-[40px]"
-          onClick={rejectRequest}
-        >
-          Cancel
-        </button>
-        <button
-          className={classNames(
-            disableSubmit ? "bg-XOrange/70 pointer-event-none" : "bg-XOrange",
-            "flex items-center justify-center text-sm text-white px-3 py-2 rounded-3xl w-full min-h-[`40px]"
-          )}
-          onClick={approveRequest}
-          disabled={disableSubmit}
-        >
-          {loader ? <Spinner /> : "Connect"}
-        </button>
+
+      <div className="text-center my-3">
+        <h3 className="text-xl leading-[1.1] font-semibold app-title">
+          Connect with X_Wallet
+        </h3>
+        <p className="mt-1 text-[13px] app-subtle">
+          Select the account(s) to use on this site
+        </p>
+      </div>
+
+      <div className="flex-1 min-h-0 max-h-[55%] overflow-hidden">
+        <div className="h-full overflow-y-auto pr-1 space-y-1.5">
+          {wallets.map((wallet) => (
+            <label
+              key={wallet.publicKey}
+              className="border border-[#1E2127] relative cursor-pointer z-10 flex px-3 py-1.5 items-center justify-between rounded-xl"
+              htmlFor={wallet.publicKey.toString()}
+            >
+              <div className="flex items-center min-w-0">
+                <input
+                  type="checkbox"
+                  className="form-checkbox h-4 w-4 text-blue-600 me-3 border border-slate-300 appearance-none hidden"
+                  id={wallet.publicKey.toString()}
+                  checked={selectedWallets[wallet.publicKey]}
+                  onChange={(event) =>
+                    setSelectedWallets((prevState) => ({
+                      ...prevState,
+                      [wallet.publicKey]: event.target.checked,
+                    }))
+                  }
+                />
+
+                <img src={xwalletIcon} alt="Account" className="h-10 w-10 shrink-0 rounded-full" />
+                <div className="ps-2 min-w-0">
+                  <h4 className="text-base leading-tight font-semibold text-white truncate">
+                    {wallet.accountName}
+                  </h4>
+                  <h6 className="mt-0.5 text-[12px] text-txt-secondary truncate">
+                    {Util.wrapPublicKey(wallet.publicKey)}
+                  </h6>
+                </div>
+              </div>
+              {selectedWallets[wallet.publicKey] ? (
+                <CheckCircleIcon className="w-6 h-6 text-accent-green shrink-0" />
+              ) : null}
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <div className="shrink-0">
+        <div className="text-center app-subtle text-[13px] mb-2.5">Only connect with sites you trust.</div>
+        <div className="grid grid-cols-2 gap-3">
+          <Button
+            variant="tertiary"
+            fullWidth
+            className="h-10 rounded-full border bg-dark-card border-dark-border hover:bg-dark-surface hover:text-white"
+            onClick={rejectRequest}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            fullWidth
+            className="h-10 rounded-full text-black bg-white hover:bg-gray-100 disabled:opacity-70 disabled:cursor-not-allowed"
+            onClick={approveRequest}
+            disabled={disableSubmit}
+          >
+            {loader ? <Spinner /> : "Connect"}
+          </Button>
+        </div>
       </div>
     </div>
   );

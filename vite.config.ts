@@ -6,6 +6,7 @@ import { nodePolyfills } from 'vite-plugin-node-polyfills'
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  base: "",
   server: {
     port: 3000,
     watch: {
@@ -21,6 +22,10 @@ export default defineConfig({
           src: "manifest.json",
           dest: "",
         },
+        {
+          src: "offscreen.html",
+          dest: "",
+        },
       ],
     }),
   ],
@@ -30,8 +35,14 @@ export default defineConfig({
       "@util": path.resolve(__dirname, "util"),
       "@virtual_machines": path.resolve(__dirname, "virtual_machines"),
       "@factory": path.resolve(__dirname, "factory"),
-      "@abi": path.resolve(__dirname, 'abi')
+      "@abi": path.resolve(__dirname, "abi"),
+      "@ui": path.resolve(__dirname, "src", "ui"),
+      "@features": path.resolve(__dirname, "src", "features"),
+      "@components": path.resolve(__dirname, "src", "components")
     },
+  },
+  esbuild: {
+    // drop: ["console", "debugger"], // temporarily disabled for debugging
   },
   build: {
     rollupOptions: {
@@ -48,6 +59,8 @@ export default defineConfig({
           "index.ts"
         ),
         sdk: path.resolve(__dirname, "sdk", "index.ts"),
+        ethereum_sdk: path.resolve(__dirname, "sdk", "ethereum.ts"),
+        offscreen: path.resolve(__dirname, "offscreen", "index.ts"),
       },
       output: {
         entryFileNames: "[name]/index.js",

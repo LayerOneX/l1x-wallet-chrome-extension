@@ -7,11 +7,11 @@ import Spinner from "../../components/Spinner";
 import ApproveTransaction from "./ApproveTransaction";
 import Swal from "sweetalert2";
 import { XCircleIconHtml } from "../../components/XCircleIconHtml";
-import { XCheckCircleIconHtml } from "../../components/XCheckCircleIconHtml";
 import { ProviderAttrib } from "@l1x/l1x-wallet-sdk";
 import { Logger } from "@util/Logger.util";
 import brokenNFT from "@assets/images/image-broken.svg";
 import { removeTransactionRequest } from "@util/Transaction.util";
+import { ethers } from "ethers";
 
 const TransferNFT: FC<
   ITransferNFT & {
@@ -27,7 +27,9 @@ const TransferNFT: FC<
   const [copied, setCopied] = useState(false);
   const [isTransferApproved, setIsTransferApproved] = useState(false);
   const [feelimit, setFeelimit] = useState<string>();
+  const [estimatedFee, setEstimatedFee] = useState<string>();
   const [nonce, setNonce] = useState("");
+  const [configError, setConfigError] = useState("");
 
   useEffect(() => {
     fetchNFTDetails();
@@ -45,14 +47,47 @@ const TransferNFT: FC<
   }
 
   async function getTransactionConfig() {
-    const nonce = await transaction.virtualMachine.getCurrentNonce(
-      transaction.providerAttrib
-    );
-    const feelimit = await transaction?.virtualMachine.getEstimateFee(
-      transaction.providerAttrib
-    );
-    setFeelimit(transaction.feeLimit ?? feelimit ?? undefined);
-    setNonce(transaction.nonce ?? nonce ?? "");
+    try {
+      const nonce = await transaction.virtualMachine.getCurrentNonce(
+        transaction.providerAttrib
+      );
+      const feelimit = await transaction?.virtualMachine.getEstimateFee(
+        transaction.providerAttrib,
+        {
+          type: "NFT",
+          collectionAddress: transaction.collectionAddress,
+          to: transaction.to,
+          tokenId: transaction.tokenId,
+        }
+      );
+      const resolvedGasLimit = feelimit || transaction.feeLimit || undefined;
+      setFeelimit(resolvedGasLimit);
+      setNonce(transaction.nonce ?? nonce ?? "");
+
+      // Compute estimated fee in native token (gasLimit × gasPrice)
+      if (resolvedGasLimit && transaction.virtualMachine.networkType === "EVM") {
+        try {
+          const provider = transaction.virtualMachine.getProvider(
+            transaction.providerAttrib
+          );
+          const feeData = await provider.getFeeData();
+          const gasPrice = feeData.gasPrice ?? feeData.maxFeePerGas;
+          if (gasPrice) {
+            const fee = BigInt(resolvedGasLimit) * gasPrice;
+            setEstimatedFee(ethers.formatEther(fee));
+          }
+        } catch {
+          // Fee display is non-critical
+        }
+      }
+    } catch (error: any) {
+      setConfigError(
+        error?.errorMessage || "Network connection failed. Fee estimation unavailable."
+      );
+      if (transaction.nonce) {
+        setNonce(transaction.nonce);
+      }
+    }
   }
 
   function copyReceiverAddress() {
@@ -73,7 +108,7 @@ const TransferNFT: FC<
         Swal.fire({
           iconHtml: XCircleIconHtml,
           title: "Failed",
-          text: error?.errorMessage ?? "Failed to fetch token details.",
+          text: error?.errorMessage ?? "Failed to fetch NFT details.",
           customClass: {
             icon: "no-border",
           },
@@ -102,7 +137,7 @@ const TransferNFT: FC<
         nonce
       );
       if (!response?.hash) {
-        throw "Failed to process transaction please try again.";
+        throw { errorMessage: "Failed to process NFT transfer. Please try again." };
       }
       transaction.hash = response?.hash;
 
@@ -128,24 +163,16 @@ const TransferNFT: FC<
         ) {
           transaction.onSuccess(transaction.hash);
         }
-        Swal.fire({
-          iconHtml: XCheckCircleIconHtml,
-          title: "Success",
-          text: "Transaction completed successfully",
-          customClass: {
-            icon: "no-border",
-          },
-        });
       }
     } catch (error: any) {
       Logger.error(error);
       if (transaction.source != "dapp") {
         Swal.fire({
           iconHtml: XCircleIconHtml,
-          title: "Failed ",
+          title: "Failed",
           text:
             error?.errorMessage ??
-            "Failed to process transaction please try again.",
+            "Failed to process NFT transfer. Please try again.",
           customClass: {
             icon: "no-border",
           },
@@ -179,7 +206,7 @@ const TransferNFT: FC<
   }
 
   return isTransferApproved ? (
-    <div className="w-[375px] h-[600px] mx-auto overflow-y-auto px-4 py-5 relative flex flex-col">
+    <div className="app-frame mx-auto overflow-y-auto px-4 py-5 relative flex flex-col">
       <div className="flex-grow-[1]">
         <div className="text-[10px] font-medium flex items-center justify-center  text-right mb-5 bg-XLightBlue absolute top-0 left-0 w-full px-4 py-1">
           Transaction Request On&nbsp;
@@ -252,67 +279,26 @@ const TransferNFT: FC<
           </div>
         </div>
 
-        {/* Fee and nonce */}
-        {/* {feelimit || nonce ? (
+        {(estimatedFee || feelimit) && (
           <div className="bg-slate-100 p-4 rounded-lg">
-            <div className="flex items-start justify-between mb-2">
-              <h2 className="font-bold text-xs  flex items-center">
-                Estimated Fees
-              </h2>
-            </div>
-            <div className="grid grid-cols-3 bg-white rounded-md items-center p-1 mb-3">
-              <label className="text-sm pl-3 flex align-middle">
-                Nonce
-                <Info
-                  className="w-4 h-4 text-slate-400 cursor-pointer ms-1"
-                  data-tooltip-id="estimated-changes-info"
-                  data-tooltip-content="Current nonce for the transaction. Update only if necessary."
-                />
-                <Tooltip
-                  id="estimated-changes-info"
-                  className="max-w-40 font-normal !bg-white !text-black shadow-lg !opacity-100 border border-slate-100 !text-[12px]"
-                />
-              </label>
-              <input
-                className="w-full py-2 px-4 border border-gray-300 rounded-md col-span-2 text-sm font-medium"
-                placeholder=""
-                value={nonce}
-                onChange={(e) => {
-                  if (!isNaN(e.target.value as any)) {
-                    setNonce(e.target.value as any);
-                  }
-                }}
-              />
-            </div>
-            <div className="grid grid-cols-3 bg-white rounded-md items-center p-1 mb-3">
-              <label className="text-sm pl-3 flex align-middle">
-                Fee Limit{" "}
-                <Info
-                  className="w-4 h-4 text-slate-400 cursor-pointer ms-1"
-                  data-tooltip-id="estimated-changes-info"
-                  data-tooltip-content="Maximum fee amount for the transaction. (Amount is in decimal format)"
-                />
-                <Tooltip
-                  id="estimated-changes-info"
-                  className="max-w-40 font-normal !bg-white !text-black shadow-lg !opacity-100 border border-slate-100 !text-[12px]"
-                />
-              </label>
-              <input
-                className="w-full py-2 px-4 border border-gray-300 rounded-md col-span-2 text-sm font-medium"
-                placeholder=""
-                value={feelimit}
-                onChange={(e) => {
-                  if (!isNaN(e.target.value as any)) {
-                    setFeelimit(e.target.value);
-                  }
-                }}
-              />
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-slate-500">Estimated Fee</span>
+              <span className="text-xs font-semibold">
+                {estimatedFee
+                  ? `~${parseFloat(estimatedFee).toFixed(6)} ${transaction?.virtualMachine?.activeNetwork?.nativeToken?.symbol || "ETH"}`
+                  : feelimit
+                    ? "Estimating..."
+                    : "—"}
+              </span>
             </div>
           </div>
-        ) : (
-          ""
-        )} */}
-        {/* End of fee and nonce */}
+        )}
+
+        {configError && (
+          <div className="mt-3 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
+            <p className="text-amber-400 text-[11px]">{configError}</p>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-3 mt-5">
@@ -326,10 +312,10 @@ const TransferNFT: FC<
         </button>
         <button
           className={classNames(
-            loader ? "bg-XOrange/70 pointer-event-none" : "bg-XOrange",
+            loader || (!!configError && !nonce) ? "bg-XOrange/70 pointer-event-none" : "bg-XOrange",
             "flex items-center justify-center text-sm text-white px-3 py-2 rounded-3xl w-full min-h-[40px]"
           )}
-          disabled={loader}
+          disabled={loader || (!!configError && !nonce)}
           onClick={confirmTransaction}
         >
           {loader ? <Spinner /> : "Confirm"}

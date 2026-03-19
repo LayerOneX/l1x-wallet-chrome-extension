@@ -25,7 +25,10 @@
       "@util/*": ["./util/*"],
       "@factory/*": ["./factory/*"],
       "@virtual_machines/*": ["./virtual_machines/*"],
-      "@abi/*": ["./abi/*"]
+      "@abi/*": ["./abi/*"],
+      "@ui/*": ["./src/ui/*"],
+      "@features/*": ["./src/features/*"],
+      "@components/*": ["./src/components/*"]
     }
   },
   "include": ["src", "util", "content_script", "sdk", "service_worker", "global.d.ts", "virtual_machines", "factory", "abi", "events"],

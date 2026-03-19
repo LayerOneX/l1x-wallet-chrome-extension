@@ -101,14 +101,16 @@ export async function disconnectAccountToSite(site: string, account: string) {
     if (siteindex < 0) {
       throw new Error("Invalid site url.");
     }
-    // assign new account list
+    // assign new account list (case-insensitive to handle EIP-55 checksum vs lowercase)
     const newAccounts = connectedSites[siteindex]?.accounts.filter(
-      (el) => el != account
+      (el) => el.toLowerCase() !== account.toLowerCase()
     );
     // update site accounts
     connectedSites[siteindex].accounts = newAccounts;
-    // udpate storage
-    await ExtensionStorage.set("connectedSites", connectedSites);
+    // remove site entry entirely if no accounts remain
+    const cleaned = connectedSites.filter((s) => s.accounts.length > 0);
+    // update storage
+    await ExtensionStorage.set("connectedSites", cleaned);
     return true;
   } catch (error) {
     throw error;

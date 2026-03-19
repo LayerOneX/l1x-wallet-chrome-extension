@@ -1,12 +1,12 @@
-import { Logger } from "@util/Logger.util";
 import { ExternalMessageListener } from "./ExternalMessageListener";
 import { IInternalMessage, IServiceWorkerResponse } from "./index.interface";
 import { ServiceWorkerMessageAction } from "./Actions.type";
 import { TransactionHandler } from "./TransactionHandler";
 import { ExtensionEventEmitter } from "./EventEmitter";
-
 class ExtensionServiceWorker extends ExternalMessageListener {
   #eventEmitter: ExtensionEventEmitter;
+  status = false;
+
   constructor() {
     super(new TransactionHandler());
     this.#eventEmitter = new ExtensionEventEmitter();
@@ -28,8 +28,20 @@ class ExtensionServiceWorker extends ExternalMessageListener {
             );
             break;
 
+          case ServiceWorkerMessageAction.RESPOND_TO_DAPP:
+            this.transactionHandler.respondToDapp(
+              { ..._message },
+              _sender,
+              _sendResponse
+            );
+            break;
+
           case ServiceWorkerMessageAction.SCREEN_WIDTH:
             this.transactionHandler.screenWidth = _message.data?.width;
+            break;
+
+          case ServiceWorkerMessageAction.KEEP_ALIVE_PING:
+            // No-op — receiving this message resets the SW idle timer
             break;
 
           default:
@@ -42,14 +54,21 @@ class ExtensionServiceWorker extends ExternalMessageListener {
     );
   }
 
+
   init() {
-    this.#listenMessages();
-    this.listenExternalMessages();
-    this.transactionHandler.listenWindowClose();
-    this.#eventEmitter.init();
-    Logger.log("Service worker started successfully...");
+    try {
+      this.#listenMessages();
+      this.listenExternalMessages();
+      this.transactionHandler.listenWindowClose();
+      this.#eventEmitter.init();
+    } catch (error) {
+    }
   }
 }
 
-const extensionServiceWorker = new ExtensionServiceWorker();
-extensionServiceWorker.init();
+try {
+  const extensionServiceWorker = new ExtensionServiceWorker();
+  extensionServiceWorker.init();
+} catch (error) {
+  console.error('[Service Worker] Error stack:', error instanceof Error ? error.stack : 'No stack');
+}

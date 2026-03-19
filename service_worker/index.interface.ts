@@ -7,6 +7,7 @@ import {
 export interface IExternalMessage {
   action: ExternalMessageAction;
   data: any;
+  requestId?: string;
 }
 
 export interface IServiceWorkerMessage {

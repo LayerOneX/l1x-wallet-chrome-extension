@@ -11,11 +11,15 @@ const ImportWallet: FC<{ navigateBack: () => void }> = (props) => {
   const [secretPhrase, setSecretPhrase] = useState<string[]>(
     new Array(phraseLength).fill("")
   );
-  const disableSubmit = secretPhrase.join("").length <= 0;
+  const disableSubmit = secretPhrase.some((word) => !word.trim());
 
   function handlePaste(event: React.ClipboardEvent<HTMLInputElement>) {
     event.preventDefault();
-    const phrase = event.clipboardData.getData("text").split(" ");
+    const phrase = event.clipboardData
+      .getData("text")
+      .trim()
+      .split(/\s+/)
+      .slice(0, phraseLength);
     setSecretPhrase((prevState) => [
       ...phrase,
       ...prevState.slice(phrase.length, prevState.length),
@@ -38,14 +42,13 @@ const ImportWallet: FC<{ navigateBack: () => void }> = (props) => {
       // store mnemonic
       await ExtensionStorage.set("mnemonic", secretPhrase.join(" "));
       // create account from mnemonic
-      const virtualMachine = VirtualMachineFactory.createVirtualMachine(
-        "L1X",
-        ""
-      );
-      const accountCreated = await virtualMachine.createAccount(
-        "Primary Account"
-      );
-      if (!accountCreated) {
+      const l1xVm = VirtualMachineFactory.createVirtualMachine("L1X", "");
+      const evmVm = VirtualMachineFactory.createVirtualMachine("EVM", "");
+      const [l1xOk, evmOk] = await Promise.all([
+        l1xVm.createAccount("Primary Account"),
+        evmVm.createAccount("Primary Account")
+      ]);
+      if (!l1xOk || !evmOk) {
         throw new Error("Failed to create account. Please try again.");
       }
       return true;
@@ -55,7 +58,7 @@ const ImportWallet: FC<{ navigateBack: () => void }> = (props) => {
       Swal.fire({
         iconHtml: XCircleIconHtml,
         title: "Failed",
-        text: "Failed to store mnemonic.",
+        text: "Failed to import wallet. Please verify your recovery phrase and try again.",
         customClass: {
           icon: "no-border",
         },
@@ -64,20 +67,25 @@ const ImportWallet: FC<{ navigateBack: () => void }> = (props) => {
   }
 
   return (
-    <form onSubmit={handleSubmit}>
-      <div className="w-[375px] h-[600px] mx-auto overflow-y-auto px-4 py-5 relative flex flex-col">
-        <div className="bg-XLightBlue px-3 py-2 text-sm font-semibold text-XBlue rounded-3xl flex items-center mb-5 min-h-[40px]">
-          <button className="me-4" onClick={props.navigateBack}>
-            <ArrowLeftIcon className="w-5 h-5 " />
+    <form onSubmit={handleSubmit} className="h-full">
+      <div className="app-frame mx-auto bg-dark-bg overflow-y-auto px-5 pt-5 pb-6 relative flex flex-col h-full">
+        <div className="bg-dark-card border border-dark-border px-4 py-3 text-[14px] font-semibold text-white rounded-full flex items-center mb-5 min-h-[48px]">
+          <button
+            className="me-4 text-txt-secondary hover:text-white transition-colors"
+            onClick={props.navigateBack}
+            type="button"
+            aria-label="Back"
+          >
+            <ArrowLeftIcon className="w-5 h-5" />
           </button>
           Import Phrase
         </div>
         <div className="flex-grow-[1]">
-          <p className="text-sm">
-            Enter the 12-word recovery phrase to import your wallet.
+          <p className="text-white text-[14px] leading-6">
+            Enter the {phraseLength}-word recovery phrase to import your wallet.
           </p>
 
-          <div className="w-full my-10 grid grid-cols-3 gap-4">
+          <div className="w-full mt-8 grid grid-cols-3 gap-3">
             {secretPhrase.map((item: string, index) => {
               return (
                 <div className="relative" key={`verify_phrase_${index}`}>
@@ -86,15 +94,19 @@ const ImportWallet: FC<{ navigateBack: () => void }> = (props) => {
                     value={item}
                     onChange={(event) =>
                       setSecretPhrase((prevState) => {
-                        let phrase = [...prevState];
-                        phrase[index] = event.target.value;
+                        const phrase = [...prevState];
+                        phrase[index] = event.target.value.trimStart();
                         return phrase;
                       })
                     }
                     onPaste={(event) => handlePaste(event)}
-                    className="bg-gray-100 text-xs px-4 py-3 rounded-md w-full outline-none"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    autoComplete="off"
+                    spellCheck={false}
+                    className="bg-dark-card border border-dark-border text-[12px] px-3 py-2.5 rounded-xl w-full outline-none text-white shadow-[0_8px_20px_rgba(0,0,0,0.25)] focus:border-accent-orange transition-colors"
                   />
-                  <span className="text-slate-400 absolute top-1 left-1 text-[8px]">
+                  <span className="text-txt-muted absolute top-1 left-2 text-[9px]">
                     {index + 1}
                   </span>
                 </div>
@@ -104,8 +116,8 @@ const ImportWallet: FC<{ navigateBack: () => void }> = (props) => {
         </div>
 
         <button
-          className={`flex items-center justify-center text-sm text-white px-3 py-2 rounded-3xl w-full min-h-[40px] ${
-            disableSubmit ? "bg-XOrange/70 pointer-event-none" : "bg-XOrange"
+          className={`flex items-center justify-center text-sm text-black px-3 py-3 rounded-full w-full min-h-[48px] ${
+            disableSubmit ? "bg-white/60 cursor-not-allowed" : "bg-white"
           }`}
           disabled={disableSubmit}
         >

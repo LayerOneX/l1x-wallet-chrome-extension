@@ -15,15 +15,15 @@ const Notify: React.FC<NotificationProps> = ({
   unmount = () => {}
 }) => {
   return (
-    <div className="w-[375px] h-[600px] mx-auto overflow-y-auto px-4 py-5 relative flex items-center justify-center ">
+    <div className="app-frame mx-auto overflow-y-auto px-4 py-5 relative flex items-center justify-center ">
       <div className="fixed left-0 top-0 w-full h-full z-50 flex items-center justify-center ">
         <div
           className="bg-black/20 w-full h-full backdrop-blur-sm absolute z-0"
           onClick={() => unmount()}
         ></div>
-        <div className="relative bg-white z-10 w-[92%] p-6 rounded-lg text-left fadeIn-animation">
-          <h3 className="text-md font-semibold mb-2 text-center">{title}</h3>
-          <p className="text-xs text-slate-500 mb-3 text-center">{content}</p>
+        <div className="relative bg-dark-card border border-dark-border z-10 w-[92%] p-6 rounded-xl text-left fadeIn-animation">
+          <h3 className="text-md font-semibold mb-2 text-center text-white">{title}</h3>
+          <p className="text-xs text-txt-secondary mb-3 text-center">{content}</p>
           <div className="text-center">
             <button
               className="inline-flex items-center justify-center text-xs text-white bg-XOrange px-3 py-2 rounded-3xl min-w-28 mx-auto"
